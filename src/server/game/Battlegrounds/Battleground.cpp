@@ -9,6 +9,7 @@
 #include "Battleground.h"
 #include "BattlegroundMgr.h"
 #include "Creature.h"
+#include "Crossfaction.h"
 #include "Chat.h"
 #include "Formulas.h"
 #include "GridNotifiersImpl.h"

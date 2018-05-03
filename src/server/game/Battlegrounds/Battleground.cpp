@@ -654,19 +654,23 @@ void Battleground::RewardHonorToTeam(uint32 honor, TeamId teamId)
             UpdatePlayerScore(itr->second, SCORE_BONUS_HONOR, honor);
 }
 
-void Battleground::RewardReputationToTeam(uint32 factionId, uint32 reputation, TeamId teamId)
+void Battleground::RewardReputationToTeam(uint32 a_faction_id, uint32 h_faction_id, uint32 Reputation, uint32 TeamID)
 {
+    FactionEntry const* a_factionEntry = sFactionStore.LookupEntry(a_faction_id);
+    FactionEntry const* h_factionEntry = sFactionStore.LookupEntry(h_faction_id);
+    if (a_factionEntry && h_factionEntry)
         for (BattlegroundPlayerMap::const_iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
-            if (itr->second->GetTeamId() == teamId)
-            {
-                uint32 realFactionId = GetRealRepFactionForPlayer(factionId, itr->second);
+        {
+            Player* plr = ObjectAccessor::FindPlayer(itr->first);
 
-                uint32 repGain = reputation;
-                AddPct(repGain, itr->second->GetTotalAuraModifier(SPELL_AURA_MOD_REPUTATION_GAIN));
-                AddPct(repGain, itr->second->GetTotalAuraModifierByMiscValue(SPELL_AURA_MOD_FACTION_REPUTATION_GAIN, realFactionId));
-                if (FactionEntry const* factionEntry = sFactionStore.LookupEntry(realFactionId))
-                    itr->second->GetReputationMgr().ModifyReputation(factionEntry, repGain);
-            }
+            if (!plr)
+                continue;
+
+            uint32 team = plr->GetTeamId();
+
+            if (team == TeamID)
+                plr->GetReputationMgr().ModifyReputation(plr->GetCFSTeamId() == TEAM_ALLIANCE ? a_factionEntry : h_factionEntry, Reputation);
+        }
 }
 
 uint32 Battleground::GetRealRepFactionForPlayer(uint32 factionId, Player* player)
@@ -1054,6 +1058,8 @@ void Battleground::BlockMovement(Player* player)
 void Battleground::RemovePlayerAtLeave(Player* player)
 {
     TeamId teamId = player->GetTeamId();
+    if (isArena())
+        teamId = player->GetBgTeamId();
 
     // check if the player was a participant of the match, or only entered through gm command
     bool participant = false;
@@ -1125,7 +1131,19 @@ void Battleground::RemovePlayerAtLeave(Player* player)
     // Remove shapeshift auras
     player->RemoveAurasByType(SPELL_AURA_MOD_SHAPESHIFT);
 
+    player->mFake_team = TEAM_NEUTRAL;
+    teamId = player->GetCFSTeamId();
+        player->SetBGTeamId(teamId);
+    if (teamId == TEAM_ALLIANCE)
+        player->setFaction(1);
+    else 
+        player->setFaction(2); 
+
+    // Crossfaction
+    player->FitPlayerInTeam(false, this);
+
     player->SetBattlegroundId(0, BATTLEGROUND_TYPE_NONE, PLAYER_MAX_BATTLEGROUND_QUEUES, false, false, TEAM_NEUTRAL);
+
 
     // Xinef: remove all criterias on bg leave
     player->ResetAchievementCriteria(ACHIEVEMENT_CRITERIA_CONDITION_BG_MAP, GetMapId(), true);
@@ -1180,10 +1198,68 @@ void Battleground::AddPlayer(Player* player)
 
     uint64 guid = player->GetGUID();
     TeamId teamId = player->GetTeamId();
+    if (isArena())
+        teamId = player->GetBgTeamId();
 
+    //Crossfaction
+    if (!isArena()){
+        if (!player->GetGroup())
+        {
+            if (((m_PlayersCount[player->GetCFSTeamId() == TEAM_HORDE] > m_PlayersCount[GetOtherTeamId(player->GetCFSTeamId())]) && !isArena()) || ((m_PlayersCount[player->GetCFSTeamId() == TEAM_ALLIANCE] > m_PlayersCount[GetOtherTeamId(player->GetCFSTeamId())]) && !isArena()))
+            {
+                player->mFake_team = GetOtherTeamId(player->GetCFSTeamId());
+                teamId = GetOtherTeamId(player->GetCFSTeamId());
+                    player->SetBGTeamId(teamId);
+
+                float x, y, z, o;
+                GetTeamStartLoc(teamId, x, y, z, o);
+                    player->TeleportTo(GetMapId(), x, y, z, o);
+            }
+        }
+        else
+        {
+            // player in Group
+            bool FirstFromGroup_OnBG = true;
+
+            for (GroupReference* itr = player->GetGroup()->GetFirstMember(); itr != NULL; itr = itr->next())
+                if (Player* player_inBG = itr->GetSource())
+                    if (player_inBG->GetGUID() != player->GetGUID())
+                        if (IsPlayerInBattleground(player_inBG->GetGUID()))
+                        {
+                            sLog->outError("Player %s: Group member on this BG", player->GetName().c_str());
+
+                            player->mFake_team = player_inBG->GetCFSTeamId();
+                            teamId = player_inBG->GetCFSTeamId();
+                                player->SetBGTeamId(teamId);
+
+                            float x, y, z, o;
+                            GetTeamStartLoc(teamId, x, y, z, o);
+                                player->TeleportTo(GetMapId(), x, y, z, o);
+
+                            FirstFromGroup_OnBG = false;
+                            break;
+                        };
+
+                        if (FirstFromGroup_OnBG)
+                        {
+                            sLog->outError("Player %s: You are first on this BG", player->GetName().c_str());
+
+                            if (((m_PlayersCount[player->GetCFSTeamId() == TEAM_HORDE] > m_PlayersCount[GetOtherTeamId(player->GetCFSTeamId())]) && !isArena()) || ((m_PlayersCount[player->GetCFSTeamId() == TEAM_ALLIANCE] > m_PlayersCount[GetOtherTeamId(player->GetCFSTeamId())]) && !isArena()))
+                            {
+                                player->mFake_team = GetOtherTeamId(player->GetCFSTeamId());
+                                teamId = GetOtherTeamId(player->GetCFSTeamId());
+                                    player->SetBGTeamId(teamId);
+
+                                float x, y, z, o;
+                                GetTeamStartLoc(teamId, x, y, z, o);
+                                    player->TeleportTo(GetMapId(), x, y, z, o);
+                            }
+                        }
+        }
 
     // Add to list/maps
     m_Players[guid] = player;
+
 
     UpdatePlayersCountByTeam(teamId, false);                  // +1 player
 
@@ -1212,6 +1288,7 @@ void Battleground::AddPlayer(Player* player)
                 player->CastSpell(player, SPELL_ALLIANCE_GREEN_FLAG, true);
         }
 
+
         // restore pets health before remove
         if (Pet* pet = player->GetPet())
             if (pet->IsAlive())
@@ -1238,6 +1315,9 @@ void Battleground::AddPlayer(Player* player)
     // setup BG group membership
     PlayerAddedToBGCheckIfBGIsRunning(player);
     AddOrSetPlayerToCorrectBgGroup(player, teamId);
+
+    // Crossfaction bg
+    player->FitPlayerInTeam(true, this);
 
     // Log
 #if defined(ENABLE_EXTRAS) && defined(ENABLE_EXTRA_LOGS)

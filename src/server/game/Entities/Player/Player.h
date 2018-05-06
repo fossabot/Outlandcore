@@ -1098,6 +1098,7 @@ class Player : public Unit, public GridObject<Player>
 
 typedef std::vector<uint64> FakePlayers;
 
+        void SendChatMessage(const char *format, ...);
         void FitPlayerInTeam(bool action, Battleground* pBattleGround = NULL);
         void DoForgetPlayersInList();
         void DoForgetPlayersInBG(Battleground* pBattleGround);                       

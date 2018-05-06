@@ -232,7 +232,7 @@ void Player::DoForgetPlayersInBG(Battleground* pBattleGround)
 
 bool BattlegroundQueue::CheckCrossFactionMatch(BattlegroundBracketId bracket_id, Battleground* bg)
 {
-       if (!sWorld->getBoolConfig(CROSSFACTION_SYSTEM_BATTLEGROUNDS) || bg->isArena())
+       if (!sWorld->getBoolConfig(CROSSFACTION_BATTLEGROUND_SYSTEM) || bg->isArena())
                return false; // Only do this if crossbg's are enabled.
 
        // Here we will add all players to selectionpool, later we check if there are enough and launch a bg.
@@ -258,7 +258,7 @@ bool BattlegroundQueue::FillXPlayersToBG(BattlegroundBracketId bracket_id, Battl
                if (!(*itr)->IsInvitedToBGInstanceGUID)
                        queuedPeople += (*itr)->Players.size();
 
-               if (sWorld->getBoolConfig(CROSSFACTION_SYSTEM_BATTLEGROUNDS) && (sBattlegroundMgr->isTesting() || queuedPeople >= bg->GetMinPlayersPerTeam() * 2 || !start))
+               if (sWorld->getBoolConfig(CROSSFACTION_BATTLEGROUND_SYSTEM) && (sBattlegroundMgr->isTesting() || queuedPeople >= bg->GetMinPlayersPerTeam() * 2 || !start))
        {
                int32 aliFree = start ? bg->GetMaxPlayersPerTeam() : bg->GetFreeSlotsForTeam(TEAM_ALLIANCE);
                int32 hordeFree = start ? bg->GetMaxPlayersPerTeam() : bg->GetFreeSlotsForTeam(TEAM_HORDE);

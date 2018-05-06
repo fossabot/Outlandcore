@@ -2764,7 +2764,6 @@ typedef std::vector<uint64> FakePlayers;
         void outDebugValues() const;
         uint64 m_lootGuid;
 
-        TeamId m_team;
         uint32 m_nextSave; // pussywizard
         uint16 m_additionalSaveTimer; // pussywizard
         uint8 m_additionalSaveMask; // pussywizard

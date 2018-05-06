@@ -469,7 +469,7 @@ void BattlegroundQueue::FillPlayersToBG(Battleground* bg, const int32 aliFree, c
 void BattlegroundQueue::FillPlayersToBGWithSpecific(Battleground* bg, const int32 aliFree, const int32 hordeFree, BattlegroundBracketId thisBracketId, BattlegroundQueue* specificQueue, BattlegroundBracketId specificBracketId)
 {
     if (!bg->isArena())
-        if (FillXPlayersToBG(bracket_id, bg, false))
+        if (FillXPlayersToBG(thisBracketId, bg, false))
             return;
 
     // clear selection pools

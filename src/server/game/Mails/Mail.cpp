@@ -120,6 +120,28 @@ void MailDraft::deleteIncludedItems(SQLTransaction& trans, bool inDB /*= false*/
     m_items.clear();
 }
 
+void MailDraft::CloneFrom(MailDraft const& draft)
+{
+    m_mailTemplateId = draft.GetMailTemplateId();
+    m_mailTemplateItemsNeed = draft.m_mailTemplateItemsNeed;
+
+    m_subject = draft.GetSubject();
+    m_body = draft.GetBody();
+    m_money = draft.GetMoney();
+    m_COD = draft.GetCOD();
+
+    for(MailItemMap::const_iterator mailItemIter = draft.m_items.begin(); mailItemIter != draft.m_items.end(); ++mailItemIter)
+    {
+        Item* item = mailItemIter->second;
+
+        if(Item* newitem = item->CloneItem(item->GetCount()))
+        {
+            newitem->SaveToDB();
+            AddItem(newitem);
+        }
+    }
+}
+
 void MailDraft::SendReturnToSender(uint32  /*sender_acc*/, uint32 sender_guid, uint32 receiver_guid, SQLTransaction& trans)
 {
     Player* receiver = ObjectAccessor::FindPlayerInOrOutOfWorld(MAKE_NEW_GUID(receiver_guid, 0, HIGHGUID_PLAYER));

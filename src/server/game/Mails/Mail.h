@@ -122,6 +122,7 @@ class MailDraft
         MailDraft& AddItem(Item* item);
         MailDraft& AddMoney(uint32 money) { m_money = money; return *this; }
         MailDraft& AddCOD(uint32 COD) { m_COD = COD; return *this; }
+        void CloneFrom(MailDraft const& draft);
 
     public:                                                 // finishers
         void SendReturnToSender(uint32 sender_acc, uint32 sender_guid, uint32 receiver_guid, SQLTransaction& trans);

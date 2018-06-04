@@ -1096,7 +1096,7 @@ class Player : public Unit, public GridObject<Player>
             TeamId m_team;
             TeamId mFake_team;
 
-typedef std::vector<uint64> FakePlayers;
+        typedef std::vector<uint64> FakePlayers;
 
         void SendChatMessage(const char *format, ...);
         void FitPlayerInTeam(bool action, Battleground* pBattleGround = NULL);

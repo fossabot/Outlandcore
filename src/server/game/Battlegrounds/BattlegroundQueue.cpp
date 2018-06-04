@@ -142,7 +142,7 @@ GroupQueueInfo* BattlegroundQueue::AddGroup(Player* leader, Group* grp, PvPDiffi
     if (ginfo->teamId == TEAM_HORDE)
         index++;
 
-    if (sWorld->getBoolConfig(CROSSFACTION_BATTLEGROUND_SYSTEM) && ginfo->ArenaType == 0)
+    if (sWorld->getBoolConfig(CROSSFACTION_BATTLEGROUND_SYSTEM) && m_arenaType == 0)
         index = BG_QUEUE_CROSSFACTION;
 
     // pussywizard: store indices at which GroupQueueInfo is in m_QueuedGroups

@@ -1125,7 +1125,7 @@ class Player : public Unit, public GridObject<Player>
 
         TeamId GetCFSTeamId() const { return m_team; }
         TeamId GetTeamId() const { return mFake_team != TEAM_NEUTRAL ? mFake_team : (m_bgData.bgTeamId && GetBattleground() ? m_bgData.bgTeamId : m_team); }
-        TeamId GetBgTeamId() const { return m_bgData.bgTeamId != TEAM_NEUTRAL ? m_bgData.bgTeamId : GetTeamId(); }
+        TeamId GetBgTeamId() const { return mFake_team != TEAM_NEUTRAL ? mFake_team : (m_bgData.bgTeamId ? m_bgData.bgTeamId : GetTeamId()); }
 
         bool SendRealNameQuery();
 

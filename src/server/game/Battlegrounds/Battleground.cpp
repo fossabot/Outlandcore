@@ -1884,7 +1884,16 @@ void Battleground::HandleKillPlayer(Player* victim, Player* killer)
 
 TeamId Battleground::GetOtherTeamId(TeamId teamId)
 {
-    return teamId != TEAM_NEUTRAL ? (teamId == TEAM_ALLIANCE ? TEAM_HORDE : TEAM_ALLIANCE) : TEAM_NEUTRAL;
+    //return teamId != TEAM_NEUTRAL ? (teamId == TEAM_ALLIANCE ? TEAM_HORDE : TEAM_ALLIANCE) : TEAM_NEUTRAL;
+    if(teamId != TEAM_NEUTRAL)
+    {
+        if(teamId == TEAM_ALLIANCE)
+            return TEAM_HORDE;
+        else
+            return TEAM_ALLIANCE;
+    }
+    else
+        return TEAM_NEUTRAL;
 }
 
 bool Battleground::IsPlayerInBattleground(uint64 guid) const

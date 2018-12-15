@@ -579,8 +579,7 @@ class Battleground
         virtual bool HandlePlayerUnderMap(Player* /*player*/) { return false; }
 
         // since arenas can be AvA or Hvh, we have to get the "temporary" team of a player
-        TeamId GetOtherTeamId(TeamId teamId) const { return teamId == TEAM_ALLIANCE ? TEAM_HORDE : TEAM_ALLIANCE; };
-        static TeamId GetOtherTeamId(TeamId teamId);
+        static TeamId GetOtherTeamId(TeamId teamId) { return teamId == TEAM_ALLIANCE ? TEAM_HORDE : TEAM_ALLIANCE; };
         bool IsPlayerInBattleground(uint64 guid) const;
 
         bool ToBeDeleted() const { return m_SetDeleteThis; }

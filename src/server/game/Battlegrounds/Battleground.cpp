@@ -1242,9 +1242,11 @@ void Battleground::AddPlayer(Player* player)
         else
         {
             bool FirstFromGroup_OnBG = true;
+
             for (GroupReference* itr = player->GetGroup()->GetFirstMember(); itr != NULL; itr = itr->next())
                 if (Player* player_inBG = itr->GetSource())
                     if (player_inBG->GetGUID() != player->GetGUID())
+                        
                         if (IsPlayerInBattleground(player_inBG->GetGUID()))
                         {
                             player->mFake_team = player_inBG->GetCFSTeamId();
@@ -1258,7 +1260,8 @@ void Battleground::AddPlayer(Player* player)
                             break;
                         };
 
-                        if (FirstFromGroup_OnBG){
+                        if (FirstFromGroup_OnBG)
+                        {
                             sLog->outError("Player %s: are first on BG", player->GetName().c_str());
                             if (((m_PlayersCount[player->GetCFSTeamId() == TEAM_HORDE] > m_PlayersCount[GetOtherTeamId(player->GetCFSTeamId())]) && !isArena()) || ((m_PlayersCount[player->GetCFSTeamId() == TEAM_ALLIANCE] > m_PlayersCount[GetOtherTeamId(player->GetCFSTeamId())]) && !isArena()))
                             {

@@ -211,7 +211,7 @@ void Player::DoForgetPlayersInBG(Battleground* pBattleGround)
 
 bool BattlegroundQueue::CheckCrossFactionMatch(BattlegroundBracketId bracket_id, Battleground* bg)
 {
-    if (!sWorld->getBoolConfig(BATTLEGROUND_CROSSFACTION_ENABLED) || bg->isArena())
+    if (!sWorld->getBoolConfig(CROSSFACTION_BATTLEGROUND_SYSTEM) || bg->isArena())
         return false; // Only do this if crossbg's are enabled.
 
     // Here we will add all players to selectionpool, later we check if there are enough and launch a bg.

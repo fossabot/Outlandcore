@@ -408,7 +408,7 @@ bool BattlegroundQueue::GetPlayerGroupInfoData(uint64 guid, GroupQueueInfo* ginf
 void BattlegroundQueue::FillPlayersToBG(Battleground* bg, const int32 aliFree, const int32 hordeFree, BattlegroundBracketId bracket_id)
 {
     if (!bg->isArena())
-        if (FillXPlayersToBG(thisBracketId, bg, false))
+        if (FillXPlayersToBG(bracket_id, bg, false))
             return;
 
     // clear selection pools

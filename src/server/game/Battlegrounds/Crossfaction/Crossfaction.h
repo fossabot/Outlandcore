@@ -41,9 +41,9 @@
 
 enum FakeMorphs
 {
-       FAKE_F_TAUREN = 20584,
-       FAKE_M_TAUREN = 20585,
-       FAKE_M_NELF = 20318,
+       FAKE_F_TAUREN  = 20584,
+       FAKE_M_TAUREN  = 20585,
+       FAKE_M_NELF    = 20318,
        FAKE_F_DRAENEI = 20323,
 };
 #endif

@@ -1,5 +1,8 @@
 /*
- * Originally written by Xinef - Copyright (C) 2016+ AzerothCore <www.azerothcore.org>, released under GNU AGPL v3 license: http://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-AGPL3
+ * Copyright (C) 2016+     AzerothCore <www.azerothcore.org>, released under GNU GPL v2 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-GPL2
+ * Copyright (C) 2008-2016 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
+ * Originally written by Xinef
 */
 
 #include "BattlegroundWS.h"
@@ -170,9 +173,9 @@ void BattlegroundWS::EventPlayerCapturedFlag(Player* player)
         PlaySoundToAll(BG_WS_SOUND_FLAG_CAPTURED_HORDE);
         SendMessageToAll(LANG_BG_WS_CAPTURED_AF, CHAT_MSG_BG_SYSTEM_HORDE, player);
     }
-
-    RewardReputationToTeam(890, 889, _reputationCapture, player->GetTeamId());
     
+    RewardReputationToTeam(890, 889, _reputationCapture, player->GetTeamId());
+
     SpawnBGObject(BG_WS_OBJECT_H_FLAG, BG_WS_FLAG_RESPAWN_TIME);
     SpawnBGObject(BG_WS_OBJECT_A_FLAG, BG_WS_FLAG_RESPAWN_TIME);
 

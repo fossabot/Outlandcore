@@ -1523,6 +1523,7 @@ void WorldSession::HandleSetTitleOpcode(WorldPacket & recv_data)
 void WorldSession::HandleTimeSyncResp(WorldPacket & recv_data)
 {
     Battleground* bg = _player->GetBattleground();
+
     if (bg)
     {
         if (_player->ShouldForgetBGPlayers() && bg)

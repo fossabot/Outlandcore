@@ -1045,8 +1045,8 @@ bool Player::Create(uint32 guidlow, CharacterCreateInfo* createInfo)
 
 
     SetCFSRace();
-    m_team = TeamIdForRace(getCFSRace());
-    SetFakeRaceAndMorph();                                  // m_team must be set before morph
+    m_team = TeamIdForRace(getCFSRace());                  // m_team must be set before morph.
+    SetFakeRaceAndMorph();
     setFactionForRace(getCFSRace());
     
     InitDisplayIds();
@@ -7026,9 +7026,6 @@ void Player::setFactionForRace(uint8 race)
 
     sScriptMgr->OnPlayerUpdateFaction(this);
 
-    if (GetTeamId() != GetTeamId())
-        return;
-
     ChrRacesEntry const* rEntry = sChrRacesStore.LookupEntry(race);
     setFaction(rEntry ? rEntry->FactionID : getFaction());
 }
@@ -7142,7 +7139,7 @@ void Player::RewardReputation(Unit* victim, float rate)
             if (repfaction1 == 729)
                 repfaction1 = 730;
             if (repfaction2 == 729)
-                 repfaction2 = 730;
+                repfaction2 = 730;
         }
         else
         {
@@ -7165,7 +7162,7 @@ void Player::RewardReputation(Unit* victim, float rate)
                     ChampioningFaction = GetChampioningFaction();
     }
 
-    TeamId teamId = GetTeamId(); // Always check player original reputation when rewarding
+    TeamId teamId = GetTeamId();
 
     if (repfaction1 && (!Rep->TeamDependent || teamId == TEAM_ALLIANCE))
     {
@@ -12354,7 +12351,7 @@ InventoryResult Player::CanUseItem(ItemTemplate const* proto) const
         if ((proto->Flags2 & ITEM_FLAGS_EXTRA_HORDE_ONLY) && GetCFSTeamId() != TEAM_HORDE)
             return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;
 
-        if ((proto->Flags2 & ITEM_FLAGS_EXTRA_ALLIANCE_ONLY) && GetTeamId() != TEAM_ALLIANCE)
+        if ((proto->Flags2 & ITEM_FLAGS_EXTRA_ALLIANCE_ONLY) && GetCFSTeamId() != TEAM_ALLIANCE)
             return EQUIP_ERR_YOU_CAN_NEVER_USE_THAT_ITEM;
 
         if ((proto->AllowableClass & getClassMask()) == 0 || (proto->AllowableRace & getCFSRaceMask()) == 0)
@@ -17755,8 +17752,8 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
     m_race = fields[3].GetUInt8();                          // set real race
 
     SetCFSRace(); 
-    m_team = TeamIdForRace(getCFSRace());
-    SetFakeRaceAndMorph();                                  // m_team must be set before morph.
+    m_team = TeamIdForRace(getCFSRace());                   // m_team must be set before morph.
+    SetFakeRaceAndMorph();
     setFactionForRace(getCFSRace());
 
     SetUInt32Value(UNIT_FIELD_LEVEL, fields[6].GetUInt8());

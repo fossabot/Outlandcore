@@ -396,7 +396,7 @@ class Battleground
         void SetMaxPlayersPerTeam(uint32 MaxPlayers) { m_MaxPlayersPerTeam = MaxPlayers; }
         void SetMinPlayersPerTeam(uint32 MinPlayers) { m_MinPlayersPerTeam = MinPlayers; }
 
-        void DecreaseInvitedCount(TeamId teamId)    
+        void DecreaseInvitedCount(TeamId teamId)
         {
             if (m_BgInvitedPlayers[teamId] > 0)
                 --m_BgInvitedPlayers[teamId]; 
@@ -486,7 +486,7 @@ class Battleground
         void RemoveAuraOnTeam(uint32 spellId, TeamId teamId);
         void RewardHonorToTeam(uint32 honor, TeamId teamId);
         void RewardReputationToTeam(uint32 a_faction_id, uint32 h_faction_id, uint32 Reputation, uint32 TeamID);
-        //uint32 GetRealRepFactionForPlayer(uint32 factionId, Player* player);
+        uint32 GetRealRepFactionForPlayer(uint32 factionId, Player* player);
 
         void UpdateWorldState(uint32 Field, uint32 Value);
         void UpdateWorldStateForPlayer(uint32 Field, uint32 Value, Player* player);
@@ -579,7 +579,7 @@ class Battleground
         virtual bool HandlePlayerUnderMap(Player* /*player*/) { return false; }
 
         // since arenas can be AvA or Hvh, we have to get the "temporary" team of a player
-        static TeamId GetOtherTeamId(TeamId teamId) { return teamId == TEAM_ALLIANCE ? TEAM_HORDE : TEAM_ALLIANCE; };
+        static TeamId GetOtherTeamId(TeamId teamId);
         bool IsPlayerInBattleground(uint64 guid) const;
 
         bool ToBeDeleted() const { return m_SetDeleteThis; }

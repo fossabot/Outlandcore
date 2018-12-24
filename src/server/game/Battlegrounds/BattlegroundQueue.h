@@ -46,7 +46,7 @@ enum BattlegroundQueueGroupTypes
     BG_QUEUE_NORMAL_HORDE       = 3,
     BG_QUEUE_CROSSFACTION       = 4
 };
-#define BG_QUEUE_GROUP_TYPES_COUNT 4
+#define BG_QUEUE_GROUP_TYPES_COUNT 5
 
 class Battleground;
 class BattlegroundQueue
@@ -59,12 +59,16 @@ class BattlegroundQueue
         void UpdateEvents(uint32 diff);
 
         bool FillXPlayersToBG(BattlegroundBracketId bracket_id, Battleground* bg, bool start = false);
+
         typedef std::multimap<int32, GroupQueueInfo*> QueuedGroupMap;
+
         int32 PreAddPlayers(QueuedGroupMap m_PreGroupMap, int32 MaxAdd, uint32 MaxInTeam);
+
         bool CheckCrossFactionMatch(BattlegroundBracketId bracket_id, Battleground* bg);
 
         void FillPlayersToBG(Battleground* bg, const int32 aliFree, const int32 hordeFree, BattlegroundBracketId bracket_id);
         void FillPlayersToBGWithSpecific(Battleground* bg, const int32 aliFree, const int32 hordeFree, BattlegroundBracketId thisBracketId, BattlegroundQueue* specificQueue, BattlegroundBracketId specificBracketId);
+
         bool CheckPremadeMatch(BattlegroundBracketId bracket_id, uint32 MinPlayersPerTeam, uint32 MaxPlayersPerTeam);
         bool CheckNormalMatch(Battleground* bgTemplate, BattlegroundBracketId bracket_id, uint32 minPlayers, uint32 maxPlayers);
         bool CheckSkirmishForSameFaction(BattlegroundBracketId bracket_id, uint32 minPlayersPerTeam);

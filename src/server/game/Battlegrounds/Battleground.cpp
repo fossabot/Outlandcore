@@ -688,12 +688,12 @@ void Battleground::RewardReputationToTeam(uint32 a_faction_id, uint32 h_faction_
         }
 }
 
-/*uint32 Battleground::GetRealRepFactionForPlayer(uint32 factionId, Player* player)
+uint32 Battleground::GetRealRepFactionForPlayer(uint32 factionId, Player* player)
 {
     if (player)
     {
         // if the bg team is not the original team, reverse reputation
-        if (player->GetTeamId() != player->GetTeamId(true))
+        if (player->GetBgTeamId() != player->GetTeamId())
         {
             switch (factionId)
             {
@@ -714,7 +714,7 @@ void Battleground::RewardReputationToTeam(uint32 a_faction_id, uint32 h_faction_
     }
 
     return factionId;
-}*/
+}
 
 
 void Battleground::UpdateWorldState(uint32 Field, uint32 Value)
@@ -1157,7 +1157,7 @@ void Battleground::RemovePlayerAtLeave(Player* player)
         player->SetBGTeamId(teamId);
     if (teamId == TEAM_ALLIANCE)
         player->setFaction(1);
-    else 
+    else
         player->setFaction(2); 
 
     // Crossfaction
@@ -1227,7 +1227,7 @@ void Battleground::AddPlayer(Player* player)
     if (!isArena())
     {
         if (!player->GetGroup())
-        {   
+        {
             if (((m_PlayersCount[player->GetCFSTeamId() == TEAM_HORDE] > m_PlayersCount[GetOtherTeamId(player->GetCFSTeamId())]) && !isArena()) || ((m_PlayersCount[player->GetCFSTeamId() == TEAM_ALLIANCE] > m_PlayersCount[GetOtherTeamId(player->GetCFSTeamId())]) && !isArena()))
             {
                 player->mFake_team = GetOtherTeamId(player->GetCFSTeamId());
@@ -1242,38 +1242,35 @@ void Battleground::AddPlayer(Player* player)
         else
         {
             bool FirstFromGroup_OnBG = true;
-
             for (GroupReference* itr = player->GetGroup()->GetFirstMember(); itr != NULL; itr = itr->next())
-            if (Player* player_inBG = itr->GetSource())
-                if (player_inBG->GetGUID() != player->GetGUID())
-                    if (IsPlayerInBattleground(player_inBG->GetGUID()))
-                    {
-                        player->mFake_team = player_inBG->GetCFSTeamId();
-                        teamId = player_inBG->GetCFSTeamId();
-                        player->SetBGTeamId(teamId);
+                if (Player* player_inBG = itr->GetSource())
+                    if (player_inBG->GetGUID() != player->GetGUID())
+                        if (IsPlayerInBattleground(player_inBG->GetGUID()))
+                        {
+                            player->mFake_team = player_inBG->GetCFSTeamId();
+                            teamId = player_inBG->GetCFSTeamId();
+                            player->SetBGTeamId(teamId);
 
-                        float x, y, z, o;
-                        GetTeamStartLoc(teamId, x, y, z, o);
-                        player->TeleportTo(GetMapId(), x, y, z, o);
-                        FirstFromGroup_OnBG = false;
-                        break;
-                    };
-                
-                if (FirstFromGroup_OnBG)
-                {
-                    sLog->outError("Player %s: are first on BG", player->GetName().c_str());
+                            float x, y, z, o;
+                            GetTeamStartLoc(teamId, x, y, z, o);
+                            player->TeleportTo(GetMapId(), x, y, z, o);
+                            FirstFromGroup_OnBG = false;
+                            break;
+                        };
 
-                    if (((m_PlayersCount[player->GetCFSTeamId() == TEAM_HORDE] > m_PlayersCount[GetOtherTeamId(player->GetCFSTeamId())]) && !isArena()) || ((m_PlayersCount[player->GetCFSTeamId() == TEAM_ALLIANCE] > m_PlayersCount[GetOtherTeamId(player->GetCFSTeamId())]) && !isArena()))
-                    {
-                        player->mFake_team = GetOtherTeamId(player->GetCFSTeamId());
-                        teamId = GetOtherTeamId(player->GetCFSTeamId());
-                        player->SetBGTeamId(teamId);
+                        if (FirstFromGroup_OnBG){
+                            sLog->outError("Player %s: are first on BG", player->GetName().c_str());
+                            if (((m_PlayersCount[player->GetCFSTeamId() == TEAM_HORDE] > m_PlayersCount[GetOtherTeamId(player->GetCFSTeamId())]) && !isArena()) || ((m_PlayersCount[player->GetCFSTeamId() == TEAM_ALLIANCE] > m_PlayersCount[GetOtherTeamId(player->GetCFSTeamId())]) && !isArena()))
+                            {
+                                player->mFake_team = GetOtherTeamId(player->GetCFSTeamId());
+                                teamId = GetOtherTeamId(player->GetCFSTeamId());
+                                player->SetBGTeamId(teamId);
 
-                        float x, y, z, o;
-                        GetTeamStartLoc(teamId, x, y, z, o);
-                        player->TeleportTo(GetMapId(), x, y, z, o);
-                    }
-                }
+                                float x, y, z, o;
+                                GetTeamStartLoc(teamId, x, y, z, o);
+                                player->TeleportTo(GetMapId(), x, y, z, o);
+                            }
+                        }
         }
     }
 
@@ -1906,16 +1903,7 @@ void Battleground::HandleKillPlayer(Player* victim, Player* killer)
 
 TeamId Battleground::GetOtherTeamId(TeamId teamId)
 {
-    //return teamId != TEAM_NEUTRAL ? (teamId == TEAM_ALLIANCE ? TEAM_HORDE : TEAM_ALLIANCE) : TEAM_NEUTRAL;
-    if(teamId != TEAM_NEUTRAL)
-    {
-        if(teamId == TEAM_ALLIANCE)
-            return TEAM_HORDE;
-        else
-            return TEAM_ALLIANCE;
-    }
-    else
-        return TEAM_NEUTRAL;
+    return teamId != TEAM_NEUTRAL ? (teamId == TEAM_ALLIANCE ? TEAM_HORDE : TEAM_ALLIANCE) : TEAM_NEUTRAL;
 }
 
 bool Battleground::IsPlayerInBattleground(uint64 guid) const

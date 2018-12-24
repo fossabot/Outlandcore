@@ -1085,42 +1085,38 @@ class Player : public Unit, public GridObject<Player>
         explicit Player(WorldSession* session);
         ~Player();
 
-        private:
-            bool m_ForgetBGPlayers;
-            bool m_ForgetInListPlayers;
-            uint8 m_FakeRace;
-            uint8 m_RealRace;
-            uint32 m_FakeMorph;
+    private:
+        bool m_ForgetBGPlayers;
+        bool m_ForgetInListPlayers;
+        uint8 m_FakeRace;
+        uint8 m_RealRace;
+        uint32 m_FakeMorph;
 
-        public:
-            TeamId m_team;
-            TeamId mFake_team;
+   public:
+        TeamId m_team;
+        TeamId mFake_team;
 
         typedef std::vector<uint64> FakePlayers;
-
         void SendChatMessage(const char *format, ...);
+
         void FitPlayerInTeam(bool action, Battleground* pBattleGround = NULL);
         void DoForgetPlayersInList();
-        void DoForgetPlayersInBG(Battleground* pBattleGround);                       
+        void DoForgetPlayersInBG(Battleground* pBattleGround);
 
         uint8 getCFSRace() const { return m_RealRace; }
-
-        void SetCFSRace() { m_RealRace = GetByteValue(UNIT_FIELD_BYTES_0, 0); }; // must be called only on login
-        void SetFakeRace();                                                      // must be called only on login
-        void SetFakeRaceAndMorph();                                              // must be called only on login
+        void SetCFSRace() { m_RealRace = GetByteValue(UNIT_FIELD_BYTES_0, 0); };
+        void SetFakeRace();
+        void SetFakeRaceAndMorph();
 
         uint32 GetFakeMorph() { return m_FakeMorph; };
         uint8 getFRace() const { return m_FakeRace; }
 
         void SetForgetBGPlayers(bool value) { m_ForgetBGPlayers = value; }
-        void SetForgetInListPlayers(bool value) { m_ForgetInListPlayers = value; }
-
         bool ShouldForgetBGPlayers() { return m_ForgetBGPlayers; }
+        void SetForgetInListPlayers(bool value) { m_ForgetInListPlayers = value; }
         bool ShouldForgetInListPlayers() { return m_ForgetInListPlayers; }
         bool SendBattleGroundChat(uint32 msgtype, std::string message);
-
         void MorphFit(bool value);
-
         bool IsPlayingNative() const { return GetTeamId() == m_team; }
 
         TeamId GetCFSTeamId() const { return m_team; }
@@ -1128,8 +1124,8 @@ class Player : public Unit, public GridObject<Player>
         TeamId GetBgTeamId() const { return m_bgData.bgTeamId != TEAM_NEUTRAL ? m_bgData.bgTeamId : GetTeamId(); }
 
         bool SendRealNameQuery();
-
         FakePlayers m_FakePlayers;
+        void SetBGTeamId(TeamId team) { m_bgData.bgTeamId = team; }
 
         void CleanupsBeforeDelete(bool finalCleanup = true);
 
@@ -2301,8 +2297,6 @@ class Player : public Unit, public GridObject<Player>
                     return;
                 }
         }
-
-        void SetBGTeamId(TeamId team) { m_bgData.bgTeamId = team; }
 
         void LeaveBattleground(Battleground* bg = NULL);
         bool CanJoinToBattleground() const;

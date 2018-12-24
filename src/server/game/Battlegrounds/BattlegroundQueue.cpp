@@ -196,7 +196,7 @@ GroupQueueInfo* BattlegroundQueue::AddGroup(Player* leader, Group* grp, PvPDiffi
                     if (!(*itr)->IsInvitedToBGInstanceGUID)
                         qPlayers += (*itr)->Players.size();
 
-                ChatHandler(leader->GetSession()).PSendSysMessage("%s Queue status (minLvl: %u maxLvl %u) Queued players: %u ", bgName, q_min_level, q_max_level, qPlayers);
+                ChatHandler(leader->GetSession()).PSendSysMessage("Queue status of %s (minlvl: %u maxlvl %u) Queued players: %u ", bgName, q_min_level, q_max_level, qPlayers);
             }
             else
             {
@@ -205,7 +205,6 @@ GroupQueueInfo* BattlegroundQueue::AddGroup(Player* leader, Group* grp, PvPDiffi
                 uint32 q_max_level = std::min(bracketEntry->maxLevel, (uint32)80);
                 uint32 qHorde = 0;
                 uint32 qAlliance = 0;
-
                 GroupsQueueType::const_iterator itr;
 
                 for (itr = m_QueuedGroups[bracketId][BG_QUEUE_NORMAL_ALLIANCE].begin(); itr != m_QueuedGroups[bracketId][BG_QUEUE_NORMAL_ALLIANCE].end(); ++itr)
@@ -409,7 +408,7 @@ bool BattlegroundQueue::GetPlayerGroupInfoData(uint64 guid, GroupQueueInfo* ginf
 void BattlegroundQueue::FillPlayersToBG(Battleground* bg, const int32 aliFree, const int32 hordeFree, BattlegroundBracketId bracket_id)
 {
     if (!bg->isArena())
-        if (FillXPlayersToBG(bracket_id, bg, false))
+        if (FillXPlayersToBG(thisBracketId, bg, false))
             return;
 
     // clear selection pools

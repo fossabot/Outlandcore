@@ -163,7 +163,7 @@ m_corpseRemoveTime(0), m_respawnTime(0), m_respawnDelay(300), m_corpseDelay(60),
 m_transportCheckTimer(1000), lootPickPocketRestoreTime(0),  m_reactState(REACT_AGGRESSIVE), m_defaultMovementType(IDLE_MOTION_TYPE),
 m_DBTableGuid(0), m_equipmentId(0), m_originalEquipmentId(0), m_AlreadyCallAssistance(false),
 m_AlreadySearchedAssistance(false), m_regenHealth(true), m_AI_locked(false), m_meleeDamageSchoolMask(SPELL_SCHOOL_MASK_NORMAL), m_originalEntry(0), m_moveInLineOfSightDisabled(false), m_moveInLineOfSightStrictlyDisabled(false),
-m_homePosition(), m_transportHomePosition(), m_creatureInfo(NULL), m_creatureData(NULL), m_waypointID(0), m_path_id(0), m_formation(NULL), _lastDamagedTime(0)
+m_homePosition(), m_transportHomePosition(), m_creatureInfo(NULL), m_creatureData(NULL), m_waypointID(0), m_path_id(0), m_formation(NULL), m_respawnCompatibilityMode(false), _lastDamagedTime(0)
 {
     m_regenTimer = CREATURE_REGEN_INTERVAL;
     m_valuesCount = UNIT_END;
@@ -268,27 +268,29 @@ void Creature::RemoveCorpse(bool setSpawnTime, bool skipVisibility)
     if (getDeathState() != CORPSE)
         return;
 
-    m_corpseRemoveTime = time(NULL);
-    setDeathState(DEAD);
-    RemoveAllAuras();
-    if (!skipVisibility) // pussywizard
-        DestroyForNearbyPlayers(); // pussywizard: previous UpdateObjectVisibility()
-    loot.clear();
-    uint32 respawnDelay = m_respawnDelay;
-    if (IsAIEnabled)
-        AI()->CorpseRemoved(respawnDelay);
-
-    // Should get removed later, just keep "compatibility" with scripts
-    if (setSpawnTime)
+    if (m_respawnCompatibilityMode)
     {
-        m_respawnTime = time(NULL) + respawnDelay;
-        //SaveRespawnTime();
-    }
+        m_corpseRemoveTime = time(nullptr);
+        setDeathState(DEAD);
+        RemoveAllAuras();
+        if (!skipVisibility) // pussywizard
+            DestroyForNearbyPlayers(); // pussywizard: previous UpdateObjectVisibility(
+        loot.clear();
+        uint32 respawnDelay = m_respawnDelay;
+        if (IsAIEnabled)
+            AI()->CorpseRemoved(respawnDelay);
 
-    float x, y, z, o;
-    GetRespawnPosition(x, y, z, &o);
-    SetHomePosition(x, y, z, o);
-    SetPosition(x, y, z, o);
+        // Should get removed later, just keep "compatibility" with scripts
+        if (setSpawnTime)
+        {
+            m_respawnTime = time(NULL) + respawnDelay;
+            //SaveRespawnTime();
+        }
+
+        float x, y, z, o;
+        GetRespawnPosition(x, y, z, &o);
+        SetHomePosition(x, y, z, o);
+        SetPosition(x, y, z, o);
 
     // xinef: relocate notifier
     m_last_notify_position.Relocate(-5000.0f, -5000.0f, -5000.0f, 0.0f);

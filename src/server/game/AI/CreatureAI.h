@@ -162,6 +162,10 @@ class CreatureAI : public UnitAI
 
         virtual bool CanBeSeen(Player const* /*seer*/) { return true; }
 
+        // Should return true if the NPC is target of an escort quest
+        // If onlyIfActive is set, should return true only if the escort quest is currently active
+        virtual bool IsEscortNPC(bool /*onlyIfActive*/) const { return false; }
+
     protected:
         virtual void MoveInLineOfSight(Unit* /*who*/);
 

@@ -580,8 +580,14 @@ enum SMART_ACTION
     SMART_ACTION_NO_ENVIRONMENT_UPDATE              = 148,
     SMART_ACTION_ZONE_UNDER_ATTACK                  = 149,
     SMART_ACTION_LOAD_GRID                          = 150,
+    SMART_ACTION_SPAWN_SPAWNGROUP                   = 151,    // Group ID, min secs, max secs, spawnflags
+    SMART_ACTION_DESPAWN_SPAWNGROUP                 = 152,    // Group ID, min secs, max secs, spawnflags
+    SMART_ACTION_RANDOM_SOUND                       = 153,
+    SMART_ACTION_SET_CORPSE_DELAY                   = 154,
+    SMART_ACTION_DISABLE_EVADE                      = 155,
+    SMART_ACTION_REMOVE_AURAS_BY_TYPE               = 156,
 
-    SMART_ACTION_END                                = 151,    // ZOMG!, zmienic w sql
+    SMART_ACTION_END                                = 157,    // ZOMG!, zmienic w sql
 };
 
 struct SmartAction
@@ -1086,6 +1092,35 @@ struct SmartAction
 
         struct
         {
+            uint32 sounds[SMART_ACTION_PARAM_COUNT - 1];
+            uint32 onlySelf;
+        } randomSound;
+
+        struct
+        {
+            uint32 timer;
+        } corpseDelay;
+
+        struct
+        {
+            uint32 disable;
+        } disableEvade;
+
+        struct
+        {
+            uint32 groupId;
+            uint32 minDelay;
+            uint32 maxDelay;
+            uint32 spawnflags;
+        } groupSpawn;
+
+        struct
+        {
+            uint32 type;
+        } auraType;
+
+        struct
+        {
             uint32 dist;
         } combatDistance;
 
@@ -1153,6 +1188,14 @@ struct SmartAction
             uint32 param6;
         } raw;
     };
+};
+
+enum SMARTAI_SPAWN_FLAGS
+{
+    SMARTAI_SPAWN_FLAG_NONE                 = 0x00,
+    SMARTAI_SPAWN_FLAG_IGNORE_RESPAWN       = 0x01,
+    SMARTAI_SPAWN_FLAG_FORCE_SPAWN          = 0x02,
+    SMARTAI_SPAWN_FLAG_NOSAVE_RESPAWN       = 0x04,
 };
 
 enum SMARTAI_TEMPLATE

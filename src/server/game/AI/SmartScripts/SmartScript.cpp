@@ -2644,6 +2644,140 @@ void SmartScript::ProcessAction(SmartScriptHolder& e, Unit* unit, uint32 var0, u
             me->GetMotionMaster()->MoveChase(me->GetVictim(), GetCasterActualDist());
         break;
     }
+        case SMART_ACTION_RANDOM_SOUND:
+        {
+            std::vector<uint32> sounds;
+            std::copy_if(std::begin(e.action.randomSound.sounds), std::end(e.action.randomSound.sounds),
+                std::back_inserter(sounds), [](uint32 sound) { return sound != 0; });
+
+            bool onlySelf = e.action.randomSound.onlySelf != 0;
+            for (WorldObject* const target : targets)
+            {
+                if (IsUnit(target))
+                {
+                    uint32 sound = Trinity::Containers::SelectRandomContainerElement(sounds);
+
+                    if (e.action.randomSound.distance == 1)
+                        target->PlayDistanceSound(sound, onlySelf ? target->ToPlayer() : nullptr);
+                    else
+                        target->PlayDirectSound(sound, onlySelf ? target->ToPlayer() : nullptr);
+
+                    sLog->outError("SmartScript::ProcessAction:: SMART_ACTION_RANDOM_SOUND: target: %s (%s), sound: %u, onlyself: %s",
+                        target->GetName().c_str(), target->GetGUID().ToString().c_str(), sound, onlySelf ? "true" : "false");
+                }
+            }
+            break;
+        }
+        case SMART_ACTION_SET_CORPSE_DELAY:
+        {
+            for (WorldObject* const target : targets)
+            {
+                if (IsCreature(target))
+                    target->ToCreature()->SetCorpseDelay(e.action.corpseDelay.timer);
+            }
+
+            break;
+        }
+        case SMART_ACTION_SPAWN_SPAWNGROUP:
+        {
+            if (e.action.groupSpawn.minDelay == 0 && e.action.groupSpawn.maxDelay == 0)
+            {
+                bool const ignoreRespawn = ((e.action.groupSpawn.spawnflags & SMARTAI_SPAWN_FLAGS::SMARTAI_SPAWN_FLAG_IGNORE_RESPAWN) != 0);
+                bool const force = ((e.action.groupSpawn.spawnflags & SMARTAI_SPAWN_FLAGS::SMARTAI_SPAWN_FLAG_FORCE_SPAWN) != 0);
+
+                // Instant spawn
+                GetBaseObject()->GetMap()->SpawnGroupSpawn(e.action.groupSpawn.groupId, ignoreRespawn, force);
+            }
+            else
+            {
+                // Delayed spawn (use values from parameter to schedule event to call us back
+                SmartEvent ne = SmartEvent();
+                ne.type = (SMART_EVENT)SMART_EVENT_UPDATE;
+                ne.event_chance = 100;
+
+                ne.minMaxRepeat.min = e.action.groupSpawn.minDelay;
+                ne.minMaxRepeat.max = e.action.groupSpawn.maxDelay;
+                ne.minMaxRepeat.repeatMin = 0;
+                ne.minMaxRepeat.repeatMax = 0;
+
+                ne.event_flags = 0;
+                ne.event_flags |= SMART_EVENT_FLAG_NOT_REPEATABLE;
+
+                SmartAction ac = SmartAction();
+                ac.type = (SMART_ACTION)SMART_ACTION_SPAWN_SPAWNGROUP;
+                ac.groupSpawn.groupId = e.action.groupSpawn.groupId;
+                ac.groupSpawn.minDelay = 0;
+                ac.groupSpawn.maxDelay = 0;
+                ac.groupSpawn.spawnflags = e.action.groupSpawn.spawnflags;
+                ac.timeEvent.id = e.action.timeEvent.id;
+
+                SmartScriptHolder ev = SmartScriptHolder();
+                ev.event = ne;
+                ev.event_id = e.event_id;
+                ev.target = e.target;
+                ev.action = ac;
+                InitTimer(ev);
+                mStoredEvents.push_back(ev);
+            }
+            break;
+        }
+        case SMART_ACTION_DESPAWN_SPAWNGROUP:
+        {
+            if (e.action.groupSpawn.minDelay == 0 && e.action.groupSpawn.maxDelay == 0)
+            {
+                bool const deleteRespawnTimes = ((e.action.groupSpawn.spawnflags & SMARTAI_SPAWN_FLAGS::SMARTAI_SPAWN_FLAG_NOSAVE_RESPAWN) != 0);
+
+                // Instant spawn
+                GetBaseObject()->GetMap()->SpawnGroupDespawn(e.action.groupSpawn.groupId, deleteRespawnTimes);
+            }
+            else
+            {
+                // Delayed spawn (use values from parameter to schedule event to call us back
+                SmartEvent ne = SmartEvent();
+                ne.type = (SMART_EVENT)SMART_EVENT_UPDATE;
+                ne.event_chance = 100;
+
+                ne.minMaxRepeat.min = e.action.groupSpawn.minDelay;
+                ne.minMaxRepeat.max = e.action.groupSpawn.maxDelay;
+                ne.minMaxRepeat.repeatMin = 0;
+                ne.minMaxRepeat.repeatMax = 0;
+
+                ne.event_flags = 0;
+                ne.event_flags |= SMART_EVENT_FLAG_NOT_REPEATABLE;
+
+                SmartAction ac = SmartAction();
+                ac.type = (SMART_ACTION)SMART_ACTION_DESPAWN_SPAWNGROUP;
+                ac.groupSpawn.groupId = e.action.groupSpawn.groupId;
+                ac.groupSpawn.minDelay = 0;
+                ac.groupSpawn.maxDelay = 0;
+                ac.groupSpawn.spawnflags = e.action.groupSpawn.spawnflags;
+                ac.timeEvent.id = e.action.timeEvent.id;
+
+                SmartScriptHolder ev = SmartScriptHolder();
+                ev.event = ne;
+                ev.event_id = e.event_id;
+                ev.target = e.target;
+                ev.action = ac;
+                InitTimer(ev);
+                mStoredEvents.push_back(ev);
+            }
+            break;
+        }
+        case SMART_ACTION_DISABLE_EVADE:
+        {
+            if (!IsSmart())
+                break;
+
+            ENSURE_AI(SmartAI, me->AI())->SetEvadeDisabled(e.action.disableEvade.disable != 0);
+            break;
+        }
+        case SMART_ACTION_REMOVE_AURAS_BY_TYPE: // can be used to exit vehicle for example
+        {
+            for (WorldObject* const target : targets)
+                if (IsUnit(target))
+                    target->ToUnit()->RemoveAurasByType((AuraType)e.action.auraType.type);
+            break;
+        }
     case SMART_ACTION_SET_SIGHT_DIST:
     {
         ObjectList* targets = GetTargets(e, unit);

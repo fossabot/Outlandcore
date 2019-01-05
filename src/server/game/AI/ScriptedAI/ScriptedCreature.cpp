@@ -466,7 +466,7 @@ void BossAI::_Reset()
     me->ResetLootMode();
     events.Reset();
     summons.DespawnAll();
-    if (instance)
+    if (instance && instance->GetBossState(_bossId) != DONE)
         instance->SetBossState(_bossId, NOT_STARTED);
 }
 
@@ -568,6 +568,15 @@ void BossAI::JustSummoned(Creature* summon)
 void BossAI::SummonedCreatureDespawn(Creature* summon)
 {
     summons.Despawn(summon);
+}
+
+void BossAI::_DespawnAtEvade(Seconds delayToRespawn, Creature* who)
+{
+    if (delayToRespawn < Seconds(2))
+    {
+        sLog->outError("_DespawnAtEvade called with delay of %ld seconds, defaulting to 2.", delayToRespawn.count());
+        delayToRespawn = Seconds(2);
+    }
 }
 
 void BossAI::UpdateAI(uint32 diff)

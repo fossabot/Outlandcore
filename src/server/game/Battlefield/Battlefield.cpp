@@ -784,7 +784,7 @@ Creature* Battlefield::SpawnCreature(uint32 entry, float x, float y, float z, fl
     }
 
     Creature* creature = new Creature(true);
-    if (!creature->Create(sObjectMgr->GenerateLowGuid(HIGHGUID_UNIT), map, PHASEMASK_NORMAL, entry, 0, x, y, z, o))
+    if (!creature->Create(sObjectMgr->GenerateLowGuid(HIGHGUID_UNIT), map, PHASEMASK_NORMAL, entry, 0, pos))
     {
         sLog->outError("Battlefield::SpawnCreature: Can't create creature entry: %u", entry);
         delete creature;
@@ -792,7 +792,7 @@ Creature* Battlefield::SpawnCreature(uint32 entry, float x, float y, float z, fl
     }
 
     creature->setFaction(BattlefieldFactions[teamId]);
-    creature->SetHomePosition(x, y, z, o);
+    creature->SetHomePosition(pos);
 
     CreatureTemplate const* cinfo = sObjectMgr->GetCreatureTemplate(entry);
     if (!cinfo)

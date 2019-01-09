@@ -249,9 +249,7 @@ void WorldSession::QueuePacket(WorldPacket* new_packet)
 bool WorldSession::Update(uint32 diff, PacketFilter& updater)
 {
     if (updater.ProcessLogout())
-    {
-        UpdateTimeOutTime(diff);
-        
+    {        
         /// If necessary, kick the player because the client didn't send anything for too long
         /// (or they've been idling in character select)
         if (IsConnectionIdle())
@@ -658,6 +656,19 @@ void WorldSession::SendNotification(uint32 string_id, ...)
 const char *WorldSession::GetTrinityString(int32 entry) const
 {
     return sObjectMgr->GetTrinityString(entry, GetSessionDbLocaleIndex());
+}
+
+void WorldSession::ResetTimeOutTime(bool onlyActive)
+{
+    if (GetPlayer())
+        m_timeOutTime = GameTime::GetGameTime() + time_t(sWorld->getIntConfig(CONFIG_SOCKET_TIMEOUTTIME_ACTIVE));
+    else if (!onlyActive)
+        m_timeOutTime = GameTime::GetGameTime() + time_t(sWorld->getIntConfig(CONFIG_SOCKET_TIMEOUTTIME));
+}
+
+bool WorldSession::IsConnectionIdle() const
+{
+    return m_timeOutTime < GameTime::GetGameTime() && !m_inQueue;
 }
 
 void WorldSession::Handle_NULL(WorldPacket& recvPacket)

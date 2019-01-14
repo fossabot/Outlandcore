@@ -2563,6 +2563,7 @@ class Unit : public WorldObject
         bool m_duringRemoveFromWorld; // lock made to not add stuff after begining removing from world
 
         uint32 _oldFactionId;           ///< faction before charm
+        bool m_petCatchUp;
 };
 
 namespace Trinity

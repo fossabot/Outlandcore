@@ -75,6 +75,7 @@
 #include "WhoListCache.h"
 #include "AsyncAuctionListing.h"
 #include "SavingSystem.h"
+#include "GameGraveyard.h"
 #include <VMapManager2.h>
 #ifdef ELUNA
 #include "LuaEngine.h"
@@ -375,7 +376,7 @@ bool World::RemoveQueuedPlayer(WorldSession* sess)
         if (*iter == sess)
         {
             sess->SetInQueue(false);
-            sess->ResetTimeOutTime();
+            sess->ResetTimeOutTime(false);
             iter = m_QueuedPlayer.erase(iter);
             found = true;
             break;
@@ -394,7 +395,7 @@ bool World::RemoveQueuedPlayer(WorldSession* sess)
     {
         WorldSession* pop_sess = m_QueuedPlayer.front();
         pop_sess->SetInQueue(false);
-        pop_sess->ResetTimeOutTime();
+        pop_sess->ResetTimeOutTime(false);
         pop_sess->SendAuthWaitQue(0);
         pop_sess->SendAddonsInfo();
 
@@ -690,6 +691,7 @@ void World::LoadConfigSettings(bool reload)
         m_int_configs[CONFIG_PORT_WORLD] = sConfigMgr->GetIntDefault("WorldServerPort", 8085);
 
     m_int_configs[CONFIG_SOCKET_TIMEOUTTIME] = sConfigMgr->GetIntDefault("SocketTimeOutTime", 900000);
+    m_int_configs[CONFIG_SOCKET_TIMEOUTTIME_ACTIVE] = sConfigMgr->GetIntDefault("SocketTimeOutTimeActive", 60000);
     m_int_configs[CONFIG_SESSION_ADD_DELAY] = sConfigMgr->GetIntDefault("SessionAddDelay", 10000);
 
     m_float_configs[CONFIG_GROUP_XP_DISTANCE] = sConfigMgr->GetFloatDefault("MaxGroupXPDistance", 74.0f);
@@ -1307,6 +1309,9 @@ void World::LoadConfigSettings(bool reload)
     m_bool_configs[CONFIG_ENABLE_CONTINENT_TRANSPORT] = sConfigMgr->GetBoolDefault("IsContinentTransport.Enabled", true);
     m_bool_configs[CONFIG_ENABLE_CONTINENT_TRANSPORT_PRELOADING] = sConfigMgr->GetBoolDefault("IsPreloadedContinentTransport.Enabled", false);
 
+    m_bool_configs[CONFIG_CALCULATE_CREATURE_ZONE_AREA_DATA] = sConfigMgr->GetBoolDefault("Calculate.Creature.Zone.Area.Data", false);
+    m_bool_configs[CONFIG_CALCULATE_GAMEOBJECT_ZONE_AREA_DATA] = sConfigMgr->GetBoolDefault("Calculate.Gameoject.Zone.Area.Data", false);
+
     // call ScriptMgr if we're reloading the configuration
     sScriptMgr->OnAfterConfigLoad(reload);
 }
@@ -1411,6 +1416,9 @@ void World::SetInitialWorldSettings()
     LoadDBCStores(m_dataPath);
     DetectDBCLang();
 
+    sLog->outString("Loading Game Graveyard...");
+    sGraveyard->LoadGraveyardFromDB();
+
     sLog->outString("Loading spell dbc data corrections...");
     sSpellMgr->LoadDbcDataCorrections();
 
@@ -1457,6 +1465,8 @@ void World::SetInitialWorldSettings()
     sObjectMgr->LoadItemLocales();
     sObjectMgr->LoadItemSetNameLocales();
     sObjectMgr->LoadQuestLocales();
+    sObjectMgr->LoadQuestOfferRewardLocale();
+    sObjectMgr->LoadQuestRequestItemsLocale();
     sObjectMgr->LoadNpcTextLocales();
     sObjectMgr->LoadPageTextLocales();
     sObjectMgr->LoadGossipMenuItemsLocales();
@@ -1639,7 +1649,7 @@ void World::SetInitialWorldSettings()
     sLFGMgr->LoadRewards();
 
     sLog->outString("Loading Graveyard-zone links...");
-    sObjectMgr->LoadGraveyardZones();
+    sGraveyard->LoadGraveyardZones();
 
     sLog->outString("Loading spell pet auras...");
     sSpellMgr->LoadSpellPetAuras();
@@ -1799,10 +1809,7 @@ void World::SetInitialWorldSettings()
     sObjectMgr->LoadSpellScripts();                              // must be after load Creature/Gameobject(Template/Data)
     sObjectMgr->LoadEventScripts();                              // must be after load Creature/Gameobject(Template/Data)
     sObjectMgr->LoadWaypointScripts();
-
-    sLog->outString("Loading Scripts text locales...");      // must be after Load*Scripts calls
-    sObjectMgr->LoadDbScriptStrings();
-
+    
     sLog->outString("Loading spell script names...");
     sObjectMgr->LoadSpellScriptNames();
 
@@ -2276,7 +2283,7 @@ namespace Trinity
     {
         public:
             typedef std::vector<WorldPacket*> WorldPacketList;
-            explicit WorldWorldTextBuilder(int32 textId, va_list* args = NULL) : i_textId(textId), i_args(args) {}
+            explicit WorldWorldTextBuilder(uint32 textId, va_list* args = NULL) : i_textId(textId), i_args(args) {}
             void operator()(WorldPacketList& data_list, LocaleConstant loc_idx)
             {
                 char const* text = sObjectMgr->GetTrinityString(i_textId, loc_idx);
@@ -2310,13 +2317,13 @@ namespace Trinity
             }
 
 
-            int32 i_textId;
+            uint32 i_textId;
             va_list* i_args;
     };
 }                                                           // namespace Trinity
 
 /// Send a System Message to all players (except self if mentioned)
-void World::SendWorldText(int32 string_id, ...)
+void World::SendWorldText(uint32 string_id, ...)
 {
     va_list ap;
     va_start(ap, string_id);
@@ -2335,7 +2342,7 @@ void World::SendWorldText(int32 string_id, ...)
 }
 
 /// Send a System Message to all GMs (except self if mentioned)
-void World::SendGMText(int32 string_id, ...)
+void World::SendGMText(uint32 string_id, ...)
 {
     va_list ap;
     va_start(ap, string_id);

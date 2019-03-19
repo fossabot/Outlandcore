@@ -1095,6 +1095,35 @@ class Player : public Unit, public GridObject<Player>
         explicit Player(WorldSession* session);
         ~Player();
 
+        //CROSSFACION BG START
+        private:
+            bool m_ForgetBGPlayers;
+            bool m_ForgetInListPlayers;
+            uint8 m_FakeRace;
+            uint8 m_RealRace;
+        public:
+            typedef std::vector<uint64> FakePlayers;
+            void SendChatMessage(const char *format, ...);
+            void FitPlayerInTeam(bool action, Battleground* pBattleGround = NULL);
+            void DoForgetPlayersInList();
+            void DoForgetPlayersInBG(Battleground* pBattleGround);
+            uint8 getORace() const { return m_RealRace; }
+            void SetORace() { m_RealRace = GetByteValue(UNIT_FIELD_BYTES_0, 0); }; // SHOULD ONLY BE CALLED ON LOGIN
+            void SetFakeRace(); // SHOULD ONLY BE CALLED ON LOGIN
+            uint8 getFRace() const { return m_FakeRace; }
+            void SetForgetBGPlayers(bool value) { m_ForgetBGPlayers = value; }
+            bool ShouldForgetBGPlayers() { return m_ForgetBGPlayers; }
+            void SetForgetInListPlayers(bool value) { m_ForgetInListPlayers = value; }
+            bool ShouldForgetInListPlayers() { return m_ForgetInListPlayers; }
+            bool SendBattleGroundChat(uint32 msgtype, std::string message);
+            void MorphFit(bool value);
+            bool IsPlayingNative() const { return GetTeam() == m_team; }
+            uint32 GetOTeam() const { return m_team; }
+            uint32 GetTeam() const { return m_bgData.bgTeam && GetBattleground() ? m_bgData.bgTeam : m_team; }
+            bool SendRealNameQuery();
+            FakePlayers m_FakePlayers;
+            //CROSSFACION BG END
+
         void CleanupsBeforeDelete(bool finalCleanup = true);
 
         void AddToWorld();
@@ -1162,7 +1191,7 @@ class Player : public Unit, public GridObject<Player>
         PlayerSocial *GetSocial() { return m_social; }
 
         PlayerTaxi m_taxi;
-        void InitTaxiNodesForLevel() { m_taxi.InitTaxiNodesForLevel(getRace(), getClass(), getLevel()); }
+        void InitTaxiNodesForLevel() { m_taxi.InitTaxiNodesForLevel(getORace(), getClass(), getLevel()); }
         bool ActivateTaxiPathTo(std::vector<uint32> const& nodes, Creature* npc = NULL, uint32 spellid = 1);
         bool ActivateTaxiPathTo(uint32 taxi_path_id, uint32 spellid = 1);
         void CleanupAfterTaxiFlight();
@@ -2081,10 +2110,9 @@ class Player : public Unit, public GridObject<Player>
         void CheckAreaExploreAndOutdoor(void);
 
         static TeamId TeamIdForRace(uint8 race);
-        TeamId GetTeamId(bool original = false) const { return original ? TeamIdForRace(getRace(true)) : m_team; };
+        //TeamId GetTeamId(bool original = false) const { return original ? TeamIdForRace(getORace()) : m_team; };
         void setFactionForRace(uint8 race);
-        void setTeamId(TeamId teamid) { m_team = teamid; };
-
+        TeamId GetTeamId() const { return GetTeam() == TEAM_ALLIANCE ? ALLIANCE : HORDE; }
         void InitDisplayIds();
 
         bool IsAtGroupRewardDistance(WorldObject const* pRewardSource) const;
@@ -2273,7 +2301,7 @@ class Player : public Unit, public GridObject<Player>
                 }
         }
 
-        TeamId GetBgTeamId() const { return m_bgData.bgTeamId != TEAM_NEUTRAL ? m_bgData.bgTeamId : GetTeamId(); }
+        //TeamId GetBgTeamId() const { return m_bgData.bgTeamId != TEAM_NEUTRAL ? m_bgData.bgTeamId : GetTeamId(); }
 
         void LeaveBattleground(Battleground* bg = NULL);
         bool CanJoinToBattleground() const;
@@ -2612,13 +2640,6 @@ class Player : public Unit, public GridObject<Player>
         const PlayerTalentMap& GetTalentMap() const { return m_talents; }
         uint32 GetNextSave() const { return m_nextSave; }
         SpellModList const& GetSpellModList(uint32 type) const { return m_spellMods[type]; }
-
-        uint8 GetFakeRace();
-
-        bool IsAlliance();
-
-        Player* _fakeLeader;
-        bool _updatedScore;
         
     protected:
         // Gamemaster whisper whitelist

@@ -38,3 +38,6 @@ INSERT INTO `characters_fake` (`name`, `race`, `class`, `level`, `zone`, `gender
 ('Melia', 5, 6, 57, 12, 0, '2014-08-08 09:21:15', '2014-08-08 16:22:37'),
 ('Balu', 4, 4, 5, 42, 1, '2014-08-08 08:06:03', '2014-08-08 14:25:07'),
 ('Jabari', 10, 2, 3, 25, 0, '2014-08-08 09:11:53', '2014-08-08 16:22:37');
+
+DELETE FROM `trinity_string` WHERE `entry` = 12022;
+INSERT INTO `trinity_string` (`entry`,`content_default`,`content_loc8`) VALUES (12022, 'Message: "Do not disturb".', 'Сообщение: "Не беспокоить".');

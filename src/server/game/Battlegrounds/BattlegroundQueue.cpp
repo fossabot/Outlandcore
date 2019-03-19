@@ -141,6 +141,9 @@ GroupQueueInfo* BattlegroundQueue::AddGroup(Player* leader, Group* grp, PvPDiffi
     if (ginfo->teamId == TEAM_HORDE)
         index++;
 
+    if (sWorld->getBoolConfig(CROSSFACTION_BATTLEGROUND_ENABLED) && ArenaType == 0)
+        index = BG_QUEUE_MIXED;
+
     // pussywizard: store indices at which GroupQueueInfo is in m_QueuedGroups
     ginfo->_bracketId = bracketId;
     ginfo->_groupType = index;
@@ -181,30 +184,44 @@ GroupQueueInfo* BattlegroundQueue::AddGroup(Player* leader, Group* grp, PvPDiffi
     if (!isRated && !isPremade && sWorld->getBoolConfig(CONFIG_BATTLEGROUND_QUEUE_ANNOUNCER_ENABLE))
         if (Battleground* bgt = sBattlegroundMgr->GetBattlegroundTemplate(ginfo->BgTypeId))
         {
-            char const* bgName = bgt->GetName();
-            uint32 q_min_level = std::min(bracketEntry->minLevel, (uint32)80);
-            uint32 q_max_level = std::min(bracketEntry->maxLevel, (uint32)80);
-            uint32 qHorde = 0;
-            uint32 qAlliance = 0;
-            GroupsQueueType::const_iterator itr;
-            for (itr = m_QueuedGroups[bracketId][BG_QUEUE_NORMAL_ALLIANCE].begin(); itr != m_QueuedGroups[bracketId][BG_QUEUE_NORMAL_ALLIANCE].end(); ++itr)
-                if (!(*itr)->IsInvitedToBGInstanceGUID)
-                    qAlliance += (*itr)->Players.size();
-            for (itr = m_QueuedGroups[bracketId][BG_QUEUE_NORMAL_HORDE].begin(); itr != m_QueuedGroups[bracketId][BG_QUEUE_NORMAL_HORDE].end(); ++itr)
-                if (!(*itr)->IsInvitedToBGInstanceGUID)
-                    qHorde += (*itr)->Players.size();
+            if (sWorld->getBoolConfig(CROSSFACTION_BATTLEGROUND_ENABLED))
+            {
 
-            // show queue status to player when joining queue
-            if (ginfo->BgTypeId == BATTLEGROUND_RB)
-                ChatHandler(leader->GetSession()).PSendSysMessage(LANG_BG_QUEUE_ANNOUNCE_80_RANDOM, bgName, q_min_level, q_max_level, qAlliance, qHorde);
-            else if (bgt->isArena())
-                ChatHandler(leader->GetSession()).PSendSysMessage(LANG_BG_QUEUE_ANNOUNCE_STANDARD, bgName, q_min_level, q_max_level, qAlliance, ((uint32)m_arenaType > qAlliance ? (uint32)m_arenaType - qAlliance : 0), qHorde, ((uint32)m_arenaType > qHorde ? (uint32)m_arenaType - qHorde : 0));
-            else if (q_min_level >= 80)
-                ChatHandler(leader->GetSession()).PSendSysMessage(LANG_BG_QUEUE_ANNOUNCE_80_SPECIFIC, bgName, q_min_level, q_max_level, qAlliance, bgt->GetMinPlayersPerTeam(), qHorde, bgt->GetMinPlayersPerTeam());
+                char const* bgName = bgt->GetName();
+                uint32 q_min_level = std::min(bracketEntry->minLevel, (uint32)80);
+                uint32 q_max_level = std::min(bracketEntry->maxLevel, (uint32)80);
+                uint32 qPlayers = 0;
+
+                for (GroupsQueueType::const_iterator itr = m_QueuedGroups[bracketId][BG_QUEUE_MIXED].begin(); itr != m_QueuedGroups[bracketId][BG_QUEUE_MIXED].end(); ++itr)
+                    if (!(*itr)->IsInvitedToBGInstanceGUID)
+                        qPlayers += (*itr)->Players.size();
+            }
             else
-                ChatHandler(leader->GetSession()).PSendSysMessage(LANG_BG_QUEUE_ANNOUNCE_STANDARD, bgName, q_min_level, q_max_level, qAlliance, (bgt->GetMinPlayersPerTeam() > qAlliance ? bgt->GetMinPlayersPerTeam() - qAlliance : 0), qHorde, (bgt->GetMinPlayersPerTeam() > qHorde ? bgt->GetMinPlayersPerTeam() - qHorde : 0));
-        }
+            {
+                char const* bgName = bgt->GetName();
+                uint32 q_min_level = std::min(bracketEntry->minLevel, (uint32)80);
+                uint32 q_max_level = std::min(bracketEntry->maxLevel, (uint32)80);
+                uint32 qHorde = 0;
+                uint32 qAlliance = 0;
+                GroupsQueueType::const_iterator itr;
+                for (itr = m_QueuedGroups[bracketId][BG_QUEUE_NORMAL_ALLIANCE].begin(); itr != m_QueuedGroups[bracketId][BG_QUEUE_NORMAL_ALLIANCE].end(); ++itr)
+                    if (!(*itr)->IsInvitedToBGInstanceGUID)
+                        qAlliance += (*itr)->Players.size();
+                for (itr = m_QueuedGroups[bracketId][BG_QUEUE_NORMAL_HORDE].begin(); itr != m_QueuedGroups[bracketId][BG_QUEUE_NORMAL_HORDE].end(); ++itr)
+                    if (!(*itr)->IsInvitedToBGInstanceGUID)
+                        qHorde += (*itr)->Players.size();
 
+                // show queue status to player when joining queue
+                if (ginfo->BgTypeId == BATTLEGROUND_RB)
+                    ChatHandler(leader->GetSession()).PSendSysMessage(LANG_BG_QUEUE_ANNOUNCE_80_RANDOM, bgName, q_min_level, q_max_level, qAlliance, qHorde);
+                else if (bgt->isArena())
+                    ChatHandler(leader->GetSession()).PSendSysMessage(LANG_BG_QUEUE_ANNOUNCE_STANDARD, bgName, q_min_level, q_max_level, qAlliance, ((uint32)m_arenaType > qAlliance ? (uint32)m_arenaType - qAlliance : 0), qHorde, ((uint32)m_arenaType > qHorde ? (uint32)m_arenaType - qHorde : 0));
+                else if (q_min_level >= 80)
+                    ChatHandler(leader->GetSession()).PSendSysMessage(LANG_BG_QUEUE_ANNOUNCE_80_SPECIFIC, bgName, q_min_level, q_max_level, qAlliance, bgt->GetMinPlayersPerTeam(), qHorde, bgt->GetMinPlayersPerTeam());
+                else
+                    ChatHandler(leader->GetSession()).PSendSysMessage(LANG_BG_QUEUE_ANNOUNCE_STANDARD, bgName, q_min_level, q_max_level, qAlliance, (bgt->GetMinPlayersPerTeam() > qAlliance ? bgt->GetMinPlayersPerTeam() - qAlliance : 0), qHorde, (bgt->GetMinPlayersPerTeam() > qHorde ? bgt->GetMinPlayersPerTeam() - qHorde : 0));
+            }
+        }
     return ginfo;
 }
 

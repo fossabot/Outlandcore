@@ -917,6 +917,10 @@ Player::Player(WorldSession* session): Unit(true), m_mover(this)
     m_achievementMgr = new AchievementMgr(this);
     m_reputationMgr = new ReputationMgr(this);
 
+    //crossfaction
+    _fakeLeader = NULL;
+    _updatedScore = false;
+
     // Ours
     m_NeedToSaveGlyphs = false;
     m_comboPointGain = 0;
@@ -27505,3 +27509,58 @@ void Player::SummonPet(uint32 entry, float x, float y, float z, float ang, PetTy
     AsynchPetSummon* asynchPetInfo = new AsynchPetSummon(entry, pos, petType, duration, createdBySpell, casterGUID);
     Pet::LoadPetFromDB(this, asynchLoadType, entry, 0, false, asynchPetInfo);
 }
+
+// Cross-faction BG methods
+uint8 Player::GetFakeRace()
+{
+    if (IsAlliance() && GetTeamId() == TEAM_HORDE)
+    {
+        // Player is Alliance faction but he has HORDE team
+        switch (getClass())
+        {
+            case CLASS_ROGUE:           return RACE_UNDEAD_PLAYER;
+            case CLASS_WARRIOR:         return RACE_UNDEAD_PLAYER;
+            case CLASS_MAGE:            return RACE_UNDEAD_PLAYER;
+            case CLASS_PALADIN:         return RACE_BLOODELF;
+            case CLASS_DRUID:           return RACE_TAUREN;
+            case CLASS_WARLOCK:         return RACE_UNDEAD_PLAYER;
+            case CLASS_HUNTER:          return RACE_ORC;
+            case CLASS_PRIEST:          return RACE_UNDEAD_PLAYER;
+            case CLASS_DEATH_KNIGHT:    return RACE_UNDEAD_PLAYER;
+            case CLASS_SHAMAN:          return RACE_ORC;
+        }
+    }
+    else if (!IsAlliance() && GetTeamId() == TEAM_ALLIANCE)
+    {
+        // Player is Horde faction but he has ALLIANCE team
+        switch (getClass())
+        {
+            case CLASS_ROGUE:           return RACE_HUMAN;
+            case CLASS_WARRIOR:         return RACE_HUMAN;
+            case CLASS_MAGE:            return RACE_HUMAN;
+            case CLASS_PALADIN:         return RACE_HUMAN;
+            case CLASS_DRUID:           return RACE_NIGHTELF;
+            case CLASS_WARLOCK:         return RACE_HUMAN;
+            case CLASS_HUNTER:          return RACE_NIGHTELF;
+            case CLASS_PRIEST:          return RACE_HUMAN;
+            case CLASS_DEATH_KNIGHT:    return RACE_HUMAN;
+            case CLASS_SHAMAN:          return RACE_DRAENEI;
+        }
+    }
+    return getRace();
+}
+
+bool Player::IsAlliance()
+{
+    switch (getRace())
+    {
+        case RACE_HUMAN:
+        case RACE_NIGHTELF:
+        case RACE_GNOME:
+        case RACE_DWARF:
+        case RACE_DRAENEI:
+            return true;
+                default:
+        return false;
+    }
+    return false;

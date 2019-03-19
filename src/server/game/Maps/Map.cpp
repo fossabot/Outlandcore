@@ -2923,6 +2923,17 @@ void BattlegroundMap::RemovePlayerFromMap(Player* player, bool remove)
     }
     if (IsBattleArena())
         player->RemoveAura(100102);
+
+    if (IsBattleground() && player)
+    {
+        player->_updatedScore = false;
+        player->_fakeLeader = NULL;
+        player->setFactionForRace(player->getRace());
+        if (player->IsAlliance())
+            player->SetTeam(TEAM_ALLIANCE);
+        else
+            player->SetTeam(TEAM_HORDE);
+    }
     Map::RemovePlayerFromMap(player, remove);
 }
 

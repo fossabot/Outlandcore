@@ -32,10 +32,15 @@ void WorldSession::SendNameQueryOpcode(uint64 guid)
         return;
     }
 
+    Player* player = ObjectAccessor::FindPlayer(guid);
+    bool InBG = false;
+    if (player && GetPlayer())
+        InBG = player->InBattleground() && GetPlayer()->InBattleground();
+
     data << uint8(0);                               // name known
     data << playerData->name;                       // played name
     data << uint8(0);                               // realm name - only set for cross realm interaction (such as Battlegrounds)
-    data << uint8(playerData->race);
+    data << uint8(InBG ? player->GetFakeRace() : playerData->race);
     data << uint8(playerData->gender);
     data << uint8(playerData->playerClass);
 

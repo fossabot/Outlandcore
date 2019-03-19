@@ -302,7 +302,7 @@ inline void Battleground::_CheckSafePositions(uint32 diff)
         for (BattlegroundPlayerMap::const_iterator itr = GetPlayers().begin(); itr != GetPlayers().end(); ++itr)
         {
             itr->second->GetPosition(&pos);
-            GetTeamStartLoc(itr->second->GetBgTeamId(), x, y, z, o);
+            GetTeamStartLoc(itr->second->GetTeamId(), x, y, z, o);
             if (pos.GetExactDistSq(x, y, z) > maxDist)
             {
 #if defined(ENABLE_EXTRAS) && defined(ENABLE_EXTRA_LOGS)
@@ -521,7 +521,7 @@ inline void Battleground::_ProcessJoin(uint32 diff)
                 if (Player* player = itr->second)
                 {
                     WorldPacket status;
-                    sBattlegroundMgr->BuildBattlegroundStatusPacket(&status, this, player->GetCurrentBattlegroundQueueSlot(), STATUS_IN_PROGRESS, 0, GetStartTime(), GetArenaType(), player->GetBgTeamId());
+                    sBattlegroundMgr->BuildBattlegroundStatusPacket(&status, this, player->GetCurrentBattlegroundQueueSlot(), STATUS_IN_PROGRESS, 0, GetStartTime(), GetArenaType(), player->GetTeamId());
                     player->GetSession()->SendPacket(&status);
 
                     player->RemoveAurasDueToSpell(SPELL_ARENA_PREPARATION);
@@ -669,19 +669,32 @@ void Battleground::RewardHonorToTeam(uint32 honor, TeamId teamId)
             UpdatePlayerScore(itr->second, SCORE_BONUS_HONOR, honor);
 }
 
-void Battleground::RewardReputationToTeam(uint32 factionId, uint32 reputation, TeamId teamId)
+void Battleground::RewardReputationToTeam(uint32 a_faction_id, uint32 h_faction_id, uint32 reputation, TeamId teamId)
 {
-        for (BattlegroundPlayerMap::const_iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
-            if (itr->second->GetBgTeamId() == teamId)
-            {
-                uint32 realFactionId = GetRealRepFactionForPlayer(factionId, itr->second);
+    FactionEntry const* a_factionEntry = sFactionStore.LookupEntry(a_faction_id);
+    FactionEntry const* h_factionEntry = sFactionStore.LookupEntry(h_faction_id);
 
-                uint32 repGain = reputation;
-                AddPct(repGain, itr->second->GetTotalAuraModifier(SPELL_AURA_MOD_REPUTATION_GAIN));
-                AddPct(repGain, itr->second->GetTotalAuraModifierByMiscValue(SPELL_AURA_MOD_FACTION_REPUTATION_GAIN, realFactionId));
-                if (FactionEntry const* factionEntry = sFactionStore.LookupEntry(realFactionId))
-                    itr->second->GetReputationMgr().ModifyReputation(factionEntry, repGain);
-            }
+    if (!a_factionEntry || !h_factionEntry)
+        return;
+
+    for (BattlegroundPlayerMap::const_iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
+    {
+        if (itr->second.OfflineRemoveTime)
+            continue;
+
+        Player* plr = ObjectAccessor::FindPlayer(itr->first);
+
+        if (!plr)
+        {
+            sLog->outError("battleground", "BattleGround:RewardReputationToTeam: %u not found!", itr->first);
+            continue;
+        }
+
+        uint32 team = plr->GetTeam();
+
+        if (team == teamId)
+            plr->GetReputationMgr().ModifyReputation(plr->GetOTeam() == ALLIANCE ? a_factionEntry : h_factionEntry, Reputation);
+    }
 }
 
 uint32 Battleground::GetRealRepFactionForPlayer(uint32 factionId, Player* player)
@@ -1035,7 +1048,7 @@ void Battleground::EndBattleground(TeamId winnerTeamId)
         }
 
         WorldPacket data;
-        sBattlegroundMgr->BuildBattlegroundStatusPacket(&data, this, player->GetCurrentBattlegroundQueueSlot(), STATUS_IN_PROGRESS, TIME_TO_AUTOREMOVE, GetStartTime(), GetArenaType(), player->GetBgTeamId());
+        sBattlegroundMgr->BuildBattlegroundStatusPacket(&data, this, player->GetCurrentBattlegroundQueueSlot(), STATUS_IN_PROGRESS, TIME_TO_AUTOREMOVE, GetStartTime(), GetArenaType(), player->GetTeamId());
         player->GetSession()->SendPacket(&data);
 
         player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_COMPLETE_BATTLEGROUND, player->GetMapId());
@@ -1146,6 +1159,8 @@ void Battleground::RemovePlayerAtLeave(Player* player)
     // Remove shapeshift auras
     player->RemoveAurasByType(SPELL_AURA_MOD_SHAPESHIFT);
 
+    player->FitPlayerInTeam(false, this);
+
     player->SetBattlegroundId(0, BATTLEGROUND_TYPE_NONE, PLAYER_MAX_BATTLEGROUND_QUEUES, false, false, TEAM_NEUTRAL);
 
     // Xinef: remove all criterias on bg leave
@@ -1200,13 +1215,12 @@ void Battleground::AddPlayer(Player* player)
     // score struct must be created in inherited class
 
     uint64 guid = player->GetGUID();
-    TeamId teamId = player->GetBgTeamId();
-
+    TeamId teamId = player->GetTeamId();
 
     // Add to list/maps
     m_Players[guid] = player;
 
-    UpdatePlayersCountByTeam(teamId, false);                  // +1 player
+    UpdatePlayersCountByTeam(teamId, false); // +1 player
 
     WorldPacket data;
     sBattlegroundMgr->BuildPlayerJoinedBattlegroundPacket(&data, player);
@@ -1259,6 +1273,8 @@ void Battleground::AddPlayer(Player* player)
     // setup BG group membership
     PlayerAddedToBGCheckIfBGIsRunning(player);
     AddOrSetPlayerToCorrectBgGroup(player, teamId);
+
+    player->FitPlayerInTeam(true, this);
 
     sScriptMgr->OnBattlegroundAddPlayer(this, player);
 
@@ -1851,7 +1867,7 @@ void Battleground::PlayerAddedToBGCheckIfBGIsRunning(Player* player)
     sBattlegroundMgr->BuildPvpLogDataPacket(&data, this);
     player->GetSession()->SendPacket(&data);
 
-    sBattlegroundMgr->BuildBattlegroundStatusPacket(&data, this, player->GetCurrentBattlegroundQueueSlot(), STATUS_IN_PROGRESS, GetEndTime(), GetStartTime(), GetArenaType(), player->GetBgTeamId());
+    sBattlegroundMgr->BuildBattlegroundStatusPacket(&data, this, player->GetCurrentBattlegroundQueueSlot(), STATUS_IN_PROGRESS, GetEndTime(), GetStartTime(), GetArenaType(), player->GetTeamId());
     player->GetSession()->SendPacket(&data);
 }
 

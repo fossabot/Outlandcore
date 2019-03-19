@@ -2613,6 +2613,13 @@ class Player : public Unit, public GridObject<Player>
         uint32 GetNextSave() const { return m_nextSave; }
         SpellModList const& GetSpellModList(uint32 type) const { return m_spellMods[type]; }
 
+        uint8 GetFakeRace();
+
+        bool IsAlliance();
+
+        Player* _fakeLeader;
+        bool _updatedScore;
+        
     protected:
         // Gamemaster whisper whitelist
         WhisperListContainer WhisperList;

@@ -439,6 +439,71 @@ void WorldSession::HandleBattleFieldPortOpcode(WorldPacket &recvData)
 
                 TeamId teamId = ginfo.teamId;
 
+                // In case there is same number of alliance and horde players
+                _player->SetTeam(ginfo.teamId);
+                _player->SetBGTeam(ginfo.teamId);
+
+                // Cross-faction BG stuff
+                if (bg->isBattleground())
+                {
+                    if (ginfo.Players.size() > 1)
+                    {
+                        if (!_player->_fakeLeader)
+                        {
+                            for (std::map<uint64, PlayerQueueInfo*>::const_iterator citer = ginfo.Players.begin(); citer != ginfo.Players.end(); ++citer)
+                                if (Player* tmpPlr = sObjectAccessor->FindPlayer(citer->first))
+                                    tmpPlr->_fakeLeader = _player;
+
+                                if (bg->GetPlayersCountByTeam(HORDE) < bg->GetMaxPlayersPerTeam() && bg->GetPlayersCountByTeam(TEAM_HORDE) < bg->GetPlayersCountByTeam(TEAM_ALLIANCE))
+                                {
+                                    _player->SetTeam(TEAM_HORDE);
+                                    _player->SetBGTeam(TEAM_HORDE);
+                                }
+                                else if (bg->GetPlayersCountByTeam(TEAM_ALLIANCE) < bg->GetMaxPlayersPerTeam() && bg->GetPlayersCountByTeam(TEAM_ALLIANCE) < bg->GetPlayersCountByTeam(TEAM_HORDE))
+                                {
+                                    _player->SetTeam(TEAM_ALLIANCE);
+                                    _player->SetBGTeam(TEAM_ALLIANCE);
+                                }
+                        }
+                        else
+                        {
+                            _player->SetTeam(_player->_fakeLeader->GetTeam());
+                            _player->SetBGTeam(_player->_fakeLeader->GetBGTeam());
+                        }
+                    }
+                    else
+                    {
+                        if (_player->_fakeLeader)
+                        {
+                            _player->SetTeam(_player->_fakeLeader->GetTeam());
+                            _player->SetBGTeam(_player->_fakeLeader->GetBGTeam());
+                        }
+                        else
+                        {
+                            if (bg->GetPlayersCountByTeam(TEAM_HORDE) < bg->GetMaxPlayersPerTeam() && bg->GetPlayersCountByTeam(TEAM_HORDE) < bg->GetPlayersCountByTeam(TEAM_ALLIANCE))
+                            {
+                                _player->SetTeam(TEAM_HORDE);
+                                _player->SetBGTeam(TEAM_HORDE);
+                            }
+                            else if (bg->GetPlayersCountByTeam(TEAM_ALLIANCE) < bg->GetMaxPlayersPerTeam() && bg->GetPlayersCountByTeam(TEAM_ALLIANCE) < bg->GetPlayersCountByTeam(TEAM_HORDE))
+                            {
+                                _player->SetTeam(TEAM_ALLIANCE);
+                                _player->SetBGTeam(TEAM_ALLIANCE);
+                            }
+                        }
+                    }
+                    bg->UpdatePlayersCountByTeam(_player->GetTeam(), false);
+                    _player->_updatedScore = true;
+                }
+        
+                if (bg->isBattleground())
+                {
+                    if (_player->GetTeam() == TEAM_HORDE && (_player->getFaction() == 1 || _player->getFaction() == 3 || _player->getFaction() == 4 || _player->getFaction() == 115 || _player->getFaction() == 1629))
+                        _player->setFaction(2);
+                    if (_player->GetTeam() == TEAM_ALLIANCE && (_player->getFaction() == 2 || _player->getFaction() == 5 || _player->getFaction() == 6 || _player->getFaction() == 116 || _player->getFaction() == 1610))
+                        _player->setFaction(1);
+                }
+
                 // remove player from all bg queues
                 for (uint32 qslot = 0; qslot < PLAYER_MAX_BATTLEGROUND_QUEUES; ++qslot)
                     if (BattlegroundQueueTypeId q = _player->GetBattlegroundQueueTypeId(qslot))

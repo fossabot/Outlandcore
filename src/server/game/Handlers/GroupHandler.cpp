@@ -20,6 +20,9 @@
 #include "Util.h"
 #include "SpellAuras.h"
 #include "Vehicle.h"
+#include "Chat.h"
+#include "Language.h"
+
 
 class Aura;
 
@@ -66,10 +69,17 @@ void WorldSession::HandleGroupInviteOpcode(WorldPacket& recvData)
 
     Player* player = ObjectAccessor::FindPlayerByName(membername, false);
 
-    // no player or cheat self-invite
-    if (!player || player == GetPlayer())
+    // no player
+    if (!player)
     {
-        SendPartyResult(PARTY_OP_INVITE, membername, ERR_BAD_PLAYER_NAME_S);
+        if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST))
+        {
+            ChatHandler(_player->GetSession()).PSendSysMessage(LANG_FAKE_NOT_DISTURB);
+        }
+        else
+        {
+            SendPartyResult(PARTY_OP_INVITE, membername, ERR_BAD_PLAYER_NAME_S);
+        }
         return;
     }
 

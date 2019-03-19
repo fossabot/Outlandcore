@@ -722,7 +722,11 @@ void World::LoadConfigSettings(bool reload)
     m_int_configs[CONFIG_STRICT_CHARTER_NAMES]                = sConfigMgr->GetIntDefault ("StrictCharterNames", 0);
     m_int_configs[CONFIG_STRICT_CHANNEL_NAMES]                = sConfigMgr->GetIntDefault ("StrictChannelNames", 0);
     m_int_configs[CONFIG_STRICT_PET_NAMES]                    = sConfigMgr->GetIntDefault ("StrictPetNames",     0);
-    
+
+    m_int_configs[CONFIG_FAKE_WHO_ONLINE_INTERVAL]            = sConfigMgr->GetIntDefault("Fake.WHO.Online.Interval", 5);
+    m_int_configs[CONFIG_FAKE_WHO_LEVELUP_INTERVAL]           = sConfigMgr->GetIntDefault("Fake.WHO.LevelUp.Interval", 2);
+
+    m_bool_configs[CONFIG_FAKE_WHO_LIST]                      = sConfigMgr->GetBoolDefault("Fake.WHO.List", false);
     m_bool_configs[CONFIG_ALLOW_TWO_SIDE_ACCOUNTS]            = sConfigMgr->GetBoolDefault("AllowTwoSide.Accounts", true);
     m_bool_configs[CONFIG_ALLOW_TWO_SIDE_INTERACTION_CALENDAR]= sConfigMgr->GetBoolDefault("AllowTwoSide.Interaction.Calendar", false);
     m_bool_configs[CONFIG_ALLOW_TWO_SIDE_INTERACTION_CHAT]    = sConfigMgr->GetBoolDefault("AllowTwoSide.Interaction.Chat", false);

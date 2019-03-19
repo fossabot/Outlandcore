@@ -1761,6 +1761,11 @@ void Player::Update(uint32 p_time)
             }
 
             m_zoneUpdateTimer = ZONE_UPDATE_INTERVAL;
+            // Fake WHO List system on then change player position with every SavePlayer Interval (usually 15min)
+            if (sWorld->getBoolConfig(CONFIG_FAKE_WHO_LIST))
+            {
+                CharacterDatabase.PExecute("UPDATE characters_fake SET level = level+1, lastup = NOW() WHERE level < 80 AND lastup < (NOW() - INTERVAL %u MINUTE) AND MINUTE(online) BETWEEN MINUTE(NOW()) AND (MINUTE(NOW()) + %u)", sWorld->getIntConfig(CONFIG_FAKE_WHO_LEVELUP_INTERVAL), sWorld->getIntConfig(CONFIG_FAKE_WHO_ONLINE_INTERVAL));
+            }
         }
         else
             m_zoneUpdateTimer -= p_time;

@@ -1131,7 +1131,7 @@ class Player : public Unit, public GridObject<Player>
 
         TeamId GetCFSTeamId() const { return m_team; }
         TeamId GetTeamId() const { return mFake_team != TEAM_NEUTRAL ? mFake_team : (m_bgData.bgTeamId && GetBattleground() ? m_bgData.bgTeamId : m_team); }
-        TeamId GetBgTeamId() const { return GetTeamId() != TEAM_NEUTRAL ? (teamId == TEAM_ALLIANCE ? TEAM_HORDE : TEAM_ALLIANCE) : TEAM_NEUTRAL; }
+        TeamId GetBgTeamId() const { return GetTeamId() != TEAM_NEUTRAL ? (GetTeamId() == TEAM_ALLIANCE ? TEAM_HORDE : TEAM_ALLIANCE) : TEAM_NEUTRAL; }
 
         bool SendRealNameQuery();
         FakePlayers m_FakePlayers;

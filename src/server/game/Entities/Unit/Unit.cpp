@@ -9200,6 +9200,31 @@ ReputationRank Unit::GetReactionTo(Unit const* target) const
     if (GetCharmerOrOwnerOrSelf() == target->GetCharmerOrOwnerOrSelf())
         return REP_FRIENDLY;
 
+   if (this->ToPlayer())
+   {
+       if (this->ToPlayer()->GetTeamId() == TEAM_ALLIANCE && target->getFaction() == 1216)
+           return REP_FRIENDLY;
+       if (this->ToPlayer()->GetTeamId() == TEAM_ALLIANCE && target->getFaction() == 1214)
+           return REP_HOSTILE;
+       
+       if (this->ToPlayer()->GetTeamId() == TEAM_HORDE && target->getFaction() == 1214)
+           return REP_FRIENDLY;
+       if (this->ToPlayer()->GetTeamId() == TEAM_HORDE && target->getFaction() == 1216)
+           return REP_HOSTILE;
+   }
+   else if (target->ToPlayer())
+   {
+       if (target->ToPlayer()->GetTeamId() == TEAM_ALLIANCE && this->getFaction() == 1216)
+           return REP_FRIENDLY;
+       if (target->ToPlayer()->GetTeamId() == TEAM_ALLIANCE && this->getFaction() == 1214)
+           return REP_HOSTILE;
+       
+       if (target->ToPlayer()->GetTeamId() == TEAM_HORDE && this->getFaction() == 1214)
+           return REP_FRIENDLY;
+       if (target->ToPlayer()->GetTeamId() == TEAM_HORDE && this->getFaction() == 1216)
+           return REP_HOSTILE;
+   }
+
     Player const* selfPlayerOwner = GetAffectingPlayer();
     Player const* targetPlayerOwner = target->GetAffectingPlayer();
 
@@ -9394,6 +9419,9 @@ bool Unit::Attack(Unit* victim, bool meleeAttack)
         if (victim->ToCreature()->IsInEvadeMode())
             return false;
     }
+ 
+   if (!victim->IsValidAttackTarget(this))
+       return false;
 
     // Unit with SPELL_AURA_SPIRIT_OF_REDEMPTION can not attack
     if (HasAuraType(SPELL_AURA_SPIRIT_OF_REDEMPTION))

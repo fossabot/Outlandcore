@@ -933,7 +933,7 @@ void Battleground::EndBattleground(TeamId winnerTeamId)
     for (BattlegroundPlayerMap::iterator itr = m_Players.begin(); itr != m_Players.end(); ++itr)
     {
         Player* player = itr->second;
-        TeamId bgTeamId = player->GetTeamId();
+        TeamId bgTeamId = player->GetBgTeamId();
         // should remove spirit of redemption
         if (player->HasAuraType(SPELL_AURA_SPIRIT_OF_REDEMPTION))
             player->RemoveAurasByType(SPELL_AURA_MOD_SHAPESHIFT);
@@ -1224,58 +1224,28 @@ void Battleground::AddPlayer(Player* player)
     if (isArena())
         teamId = player->GetBgTeamId();
 
-    //Crossfaction
-    if (!isArena())
+    //Crossfaction bg
+    if ((m_PlayersCount[player->GetCFSTeamId()] > m_PlayersCount[GetOtherTeamId(player->GetCFSTeamId())]) && !isArena())
     {
-        if (!player->GetGroup())
-        {
-            if (((m_PlayersCount[player->GetCFSTeamId() == TEAM_HORDE] > m_PlayersCount[GetOtherTeamId(player->GetCFSTeamId())]) && !isArena()) || ((m_PlayersCount[player->GetCFSTeamId() == TEAM_ALLIANCE] > m_PlayersCount[GetOtherTeamId(player->GetCFSTeamId())]) && !isArena()))
-            {
-                player->mFake_team = GetOtherTeamId(player->GetCFSTeamId());
-                teamId = GetOtherTeamId(player->GetCFSTeamId());
-                player->SetBGTeamId(teamId);
+        sLog->outError("Crossfaction Bg: player->GetTeamId() = %u ; GetOtherTeamId(player->GetTeamId()) = %u ; m_PlayersCount[player->GetTeamId()] = %u ; m_PlayersCount[GetOtherTeamId(player->GetTeamId())] = %u", player->GetTeamId(), GetOtherTeamId(player->GetTeamId()), m_PlayersCount[player->GetTeamId()], m_PlayersCount[GetOtherTeamId(player->GetTeamId())]);
+        player->mFake_team = GetOtherTeamId(player->GetCFSTeamId());
+        teamId = GetOtherTeamId(player->GetCFSTeamId());
+        /*if (player->m_bgData)
+        player->m_bgData.bgTeamId = GetOtherTeamId(player->GetCFSTeamId());*/
+        player->SetBGTeamId(teamId);
+        player->SetFakeRaceAndMorph();
+        player->MorphFit(true);
+        ChrRacesEntry const* rEntry;
+        if (teamId == TEAM_ALLIANCE)
+            player->setFaction(1);
+        else player->setFaction(2);
 
-                float x, y, z, o;
-                GetTeamStartLoc(teamId, x, y, z, o);
-                player->TeleportTo(GetMapId(), x, y, z, o);
-            }
-        }
-        else
-        {
-            bool FirstFromGroup_OnBG = true;
+        float x, y, z, o;
+        GetTeamStartLoc(teamId, x, y, z, o);
+        player->TeleportTo(GetMapId(), x, y, z, o);
 
-            for (GroupReference* itr = player->GetGroup()->GetFirstMember(); itr != NULL; itr = itr->next())
-                if (Player* player_inBG = itr->GetSource())
-                    if (player_inBG->GetGUID() != player->GetGUID())
-                        
-                        if (IsPlayerInBattleground(player_inBG->GetGUID()))
-                        {
-                            player->mFake_team = player_inBG->GetCFSTeamId();
-                            teamId = player_inBG->GetCFSTeamId();
-                            player->SetBGTeamId(teamId);
-
-                            float x, y, z, o;
-                            GetTeamStartLoc(teamId, x, y, z, o);
-                            player->TeleportTo(GetMapId(), x, y, z, o);
-                            FirstFromGroup_OnBG = false;
-                            break;
-                        };
-
-                        if (FirstFromGroup_OnBG)
-                        {
-                            sLog->outError("Player %s: are first on BG", player->GetName().c_str());
-                            if (((m_PlayersCount[player->GetCFSTeamId() == TEAM_HORDE] > m_PlayersCount[GetOtherTeamId(player->GetCFSTeamId())]) && !isArena()) || ((m_PlayersCount[player->GetCFSTeamId() == TEAM_ALLIANCE] > m_PlayersCount[GetOtherTeamId(player->GetCFSTeamId())]) && !isArena()))
-                            {
-                                player->mFake_team = GetOtherTeamId(player->GetCFSTeamId());
-                                teamId = GetOtherTeamId(player->GetCFSTeamId());
-                                player->SetBGTeamId(teamId);
-
-                                float x, y, z, o;
-                                GetTeamStartLoc(teamId, x, y, z, o);
-                                player->TeleportTo(GetMapId(), x, y, z, o);
-                            }
-                        }
-        }
+        sLog->outError("Crossfaction Bg: GetTeamId() = %u ; GetBgTeamId() = %u ; player->GetFakeMorph() = %u ; player->getFaction() = %u", player->GetTeamId(), player->GetBgTeamId(), player->GetFakeMorph(), player->getFaction());
+        player->SendChatMessage("%sYou play for %s%s on %s", MSG_COLOR_WHITE, player->GetTeamId() == TEAM_ALLIANCE ? MSG_COLOR_DARKBLUE "Allieance" : MSG_COLOR_RED "Horde", MSG_COLOR_WHITE, GetName());
     }
 
     // Add to list/maps

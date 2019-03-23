@@ -148,7 +148,16 @@ bool Player::SendBattleGroundChat(uint32 msgtype, std::string message)
         return false;
 }
 
-
+void Player::MorphFit(bool value)
+{
+       if (!IsPlayingNative() && value)
+       {
+               SetDisplayId(GetFakeMorph());
+               SetNativeDisplayId(GetFakeMorph());
+       }
+       else
+               InitDisplayIds();
+}
 
 void Player::FitPlayerInTeam(bool action, Battleground* pBattleGround)
 {

@@ -1,6 +1,5 @@
-CFBG Build Status:
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/7cb3e7d6c75b437eb928488e666cfeef)](https://app.codacy.com/app/Viste/Azeroth4you?utm_source=github.com&utm_medium=referral&utm_content=Viste/Azeroth4you&utm_campaign=Badge_Grade_Dashboard)
-[![CFBG Build Status](https://travis-ci.org/azerothcore/azerothcore-wotlk.svg)](https://travis-ci.org/Viste/Azeroth4you.svg?branch=CrossfactionBattleground)
+CFBG Build Status:[![CFBG Build Status](https://travis-ci.org/azerothcore/azerothcore-wotlk.svg)](https://travis-ci.org/Viste/Azeroth4you.svg?branch=CrossfactionBattleground)
 # ![logo](https://raw.githubusercontent.com/azerothcore/azerothcore.github.io/master/images/logo-github.png) AzerothCore
 
 [![Master Build Status](https://travis-ci.org/azerothcore/azerothcore-wotlk.svg)](https://travis-ci.org/azerothcore/azerothcore-wotlk)

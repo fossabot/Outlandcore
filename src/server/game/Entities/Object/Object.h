@@ -762,6 +762,7 @@ class WorldObject : public Object, public WorldLocation
             MovePosition(pos, dist, angle);
         }
         void MovePositionToFirstCollision(Position &pos, float dist, float angle);
+        bool ComputeCollisionPosition(Position const& startPosition, Position const& endPosition, float& x, float& y, float& z) const;
         void GetFirstCollisionPosition(Position &pos, float dist, float angle)
         {
             GetPosition(&pos);
@@ -1061,6 +1062,7 @@ class WorldObject : public Object, public WorldLocation
         bool CanDetectInvisibilityOf(WorldObject const* obj) const;
         //bool CanDetectStealthOf(WorldObject const* obj) const;
         bool CanDetectStealthOf(WorldObject const* obj, bool checkAlert = false) const;
+        float SelectBestZForDestination(float x, float y, float z, bool excludeCollisionHeight) const;
 };
 
 namespace Trinity

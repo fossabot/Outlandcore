@@ -1844,7 +1844,7 @@ float Map::GetWaterOrGroundLevel(float x, float y, float z, float* ground /*= NU
     if (const_cast<Map*>(this)->GetGrid(x, y))
     {
         // we need ground level (including grid height version) for proper return water level in point
-        float ground_z = GetHeight(phasemask, x, y, z, true, maxSearchDist, collisionHeight);
+        float ground_z = GetHeight(PHASEMASK_NORMAL, x, y, z + collisionHeight, true, maxSearchDist);
         if (ground)
             *ground = ground_z;
 
@@ -1884,21 +1884,30 @@ Transport* Map::GetTransportForPos(uint32 phase, float x, float y, float z, Worl
     return NULL;
 }
 
-float Map::GetHeight(float x, float y, float z, bool checkVMap /*= true*/, float maxSearchDist /*= DEFAULT_HEIGHT_SEARCH*/, float collisionHeight) const
+float Map::GetHeight(float x, float y, float z, bool checkVMap /*= true*/, float maxSearchDist /*= DEFAULT_HEIGHT_SEARCH*/) const
 { 
-    float const gridHeight = GetGridMapHeight(x, y);
-    float mapHeight = z + collisionHeight > gridHeight ? gridHeight : VMAP_INVALID_HEIGHT_VALUE;
+    // find raw .map surface under Z coordinates
+    float mapHeight = VMAP_INVALID_HEIGHT_VALUE;
+    if (GridMap* gmap = const_cast<Map*>(this)->GetGrid(x, y))
+    {
+        float gridHeight = gmap->getHeight(x, y);
+        if (z > gridHeight)
+            mapHeight = gridHeight;
+    }
 
     float vmapHeight = VMAP_INVALID_HEIGHT_VALUE;
     if (checkVMap)
-        vmapHeight = GetVMapFloor(x, y, z, maxSearchDist, collisionHeight);
-
-    bool const hasVmapFloor = vmapHeight > INVALID_HEIGHT;
-    bool const hasMapFloor = mapHeight > INVALID_HEIGHT;
-
-    if (hasVmapFloor)
     {
-        if (hasMapFloor)
+        VMAP::IVMapManager* vmgr = VMAP::VMapFactory::createOrGetVMapManager();
+        //if (vmgr->isHeightCalcEnabled()) // pussywizard: optimization
+            vmapHeight = vmgr->getHeight(GetId(), x, y, z, maxSearchDist);
+    }
+
+    // mapHeight set for any above raw ground Z or <= INVALID_HEIGHT
+    // vmapheight set for any under Z value or <= INVALID_HEIGHT
+    if (vmapHeight > INVALID_HEIGHT)
+    {
+        if (mapHeight > INVALID_HEIGHT)
         {
             // we have mapheight and vmapheight and must select more appropriate
 
@@ -1913,7 +1922,7 @@ float Map::GetHeight(float x, float y, float z, bool checkVMap /*= true*/, float
             return vmapHeight;                              // we have only vmapHeight (if have)
     }
 
-    return gridHeight;                               // explicitly use map data
+    return mapHeight;                               // explicitly use map data
 }
 
 float Map::GetMinHeight(float x, float y) const
@@ -1924,18 +1933,6 @@ float Map::GetMinHeight(float x, float y) const
     return -500.0f;
 }
 
-float Map::GetGridMapHeight(float x, float y) const
-{
-    if (GridMap* gmap = const_cast<Map*>(this)->GetGrid(x, y))
-        return gmap->getHeight(x, y);
-
-    return VMAP_INVALID_HEIGHT_VALUE;
-}
-
-float Map::GetVMapFloor(float x, float y, float z, float maxSearchDist, float collisionHeight) const
-{
-    return VMAP::VMapFactory::createOrGetVMapManager()->getHeight(GetId(), x, y, z + collisionHeight, maxSearchDist);
-}
 
 inline bool IsOutdoorWMO(uint32 mogpFlags, int32 /*adtId*/, int32 /*rootId*/, int32 /*groupId*/, WMOAreaTableEntry const* wmoEntry, AreaTableEntry const* atEntry)
 {
@@ -2163,11 +2160,6 @@ float Map::GetWaterLevel(float x, float y) const
         return gmap->getLiquidLevel(x, y);
     else
         return 0;
-}
-
-float Map::GetCeil(float x, float y, float z, float maxSearchDist, float collisionHeight) const
-{
-    return VMAP::VMapFactory::createOrGetVMapManager()->getCeil(GetId(), x, y, z + collisionHeight, maxSearchDist);
 }
 
 bool Map::isInLineOfSight(float x1, float y1, float z1, float x2, float y2, float z2, uint32 phasemask, LineOfSightChecks checks) const

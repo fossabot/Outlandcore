@@ -16,7 +16,6 @@
 #include "Vehicle.h"
 #include "MapReference.h"
 #include "Player.h"
-#include "GameTime.h"
 #include "Cell.h"
 #include "CellImpl.h"
 #include "WorldModel.h"
@@ -71,9 +70,13 @@ bool MotionTransport::CreateMoTrans(uint32 guidlow, uint32 entry, uint32 mapid, 
     _triggeredArrivalEvent = false;
     _triggeredDepartureEvent = false;
 
+    if (GameObjectTemplateAddon const* addon = GetTemplateAddon())
+    {
+        SetUInt32Value(GAMEOBJECT_FACTION, addon->faction);
+        SetUInt32Value(GAMEOBJECT_FLAGS, addon->flags);
+    }
+
     SetObjectScale(goinfo->size);
-    SetUInt32Value(GAMEOBJECT_FACTION, goinfo->faction);
-    SetUInt32Value(GAMEOBJECT_FLAGS, goinfo->flags);
     SetPathProgress(0);
     SetPeriod(tInfo->pathTime);
     SetEntry(goinfo->entry);
@@ -278,7 +281,7 @@ void MotionTransport::RemovePassenger(WorldObject* passenger, bool withAll)
         if (Player* plr = passenger->ToPlayer())
         {
             sScriptMgr->OnRemovePassenger(ToTransport(), plr);
-            plr->SetFallInformation(GameTime::GetGameTime(), plr->GetPositionZ());
+            plr->SetFallInformation(time(NULL), plr->GetPositionZ());
         }
 
         if (withAll)
@@ -697,8 +700,11 @@ bool StaticTransport::Create(uint32 guidlow, uint32 name_id, Map* map, uint32 ph
 
     SetObjectScale(goinfo->size);
 
-    SetUInt32Value(GAMEOBJECT_FACTION, goinfo->faction);
-    SetUInt32Value(GAMEOBJECT_FLAGS, goinfo->flags);
+    if (GameObjectTemplateAddon const* addon = GetTemplateAddon())
+    {
+        SetUInt32Value(GAMEOBJECT_FACTION, addon->faction);
+        SetUInt32Value(GAMEOBJECT_FLAGS, addon->flags);
+    }
 
     SetEntry(goinfo->entry);
     SetName(goinfo->name);
@@ -949,7 +955,7 @@ void StaticTransport::RemovePassenger(WorldObject* passenger, bool withAll)
         if (Player* plr = passenger->ToPlayer())
         {
             sScriptMgr->OnRemovePassenger(ToTransport(), plr);
-            plr->SetFallInformation(GameTime::GetGameTime(), plr->GetPositionZ());
+            plr->SetFallInformation(time(NULL), plr->GetPositionZ());
         }
 
         if (withAll)

@@ -1,7 +1,6 @@
 // Scripted by Xinef
 
 #include "ScriptMgr.h"
-#include "ScriptPCH.h"
 #include "ScriptedCreature.h"
 #include "ScriptedGossip.h"
 #include "SpellAuras.h"
@@ -10,8 +9,9 @@
 #include "SpellScript.h"
 #include "GameEventMgr.h"
 #include "Group.h"
-#include "GameTime.h"
 #include "LFGMgr.h"
+#include "PassiveAI.h"
+#include "CellImpl.h"
 
 ///////////////////////////////////////
 ////// GOS
@@ -435,7 +435,7 @@ class npc_brewfest_keg_reciver : public CreatureScript
                     {
                         if (Aura* aur = player->GetAura(SPELL_RAM_AURA))
                         {
-                            int32 diff = aur->GetApplyTime() - (GameTime::GetGameTime()-(HOUR*18)+spellCooldown);
+                            int32 diff = aur->GetApplyTime() - (time(NULL)-(HOUR*18)+spellCooldown);
                             if (diff > 10) // aura applied later
                                 return;
 
@@ -843,7 +843,7 @@ class npc_dark_iron_attack_generator : public CreatureScript
 
             bool AllowStart()
             {
-                time_t curtime = GameTime::GetGameTime();
+                time_t curtime = time(NULL);
                 tm strDate;
                 ACE_OS::localtime_r(&curtime, &strDate);
 

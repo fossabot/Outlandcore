@@ -32,8 +32,6 @@ struct GameObjectTemplate
     std::string IconName;
     std::string castBarCaption;
     std::string unk1;
-    uint32  faction;
-    uint32  flags;
     float   size;
     union                                                   // different GO types have different data field
     {
@@ -532,8 +530,19 @@ struct GameObjectTemplate
     }
 };
 
+// From `gameobject_template_addon`
+struct GameObjectTemplateAddon
+{
+    uint32  entry;
+    uint32  faction;
+    uint32  flags;
+    uint32  mingold;
+    uint32  maxgold;
+};
+
 // Benchmarked: Faster than std::map (insert/find)
 typedef UNORDERED_MAP<uint32, GameObjectTemplate> GameObjectTemplateContainer;
+typedef UNORDERED_MAP<uint32, GameObjectTemplateAddon> GameObjectTemplateAddonContainer;
 
 class OPvPCapturePoint;
 struct TransportAnimation;
@@ -646,6 +655,7 @@ class GameObject : public WorldObject, public GridObject<GameObject>, public Mov
         virtual bool Create(uint32 guidlow, uint32 name_id, Map* map, uint32 phaseMask, float x, float y, float z, float ang, G3D::Quat const& rotation, uint32 animprogress, GOState go_state, uint32 artKit = 0);
         void Update(uint32 p_time);
         GameObjectTemplate const* GetGOInfo() const { return m_goInfo; }
+        GameObjectTemplateAddon const* GetTemplateAddon() const;
         GameObjectData const* GetGOData() const { return m_goData; }
         GameObjectValue const* GetGOValue() const { return &m_goValue; }
 
@@ -690,9 +700,20 @@ class GameObject : public WorldObject, public GridObject<GameObject>, public Mov
         uint32 GetSpellId() const { return m_spellId;}
 
         time_t GetRespawnTime() const { return m_respawnTime; }
-        time_t GetRespawnTimeEx() const;
-        
-        void SetRespawnTime(int32 respawn);
+        time_t GetRespawnTimeEx() const
+        {
+            time_t now = time(NULL);
+            if (m_respawnTime > now)
+                return m_respawnTime;
+            else
+                return now;
+        }
+
+        void SetRespawnTime(int32 respawn)
+        {
+            m_respawnTime = respawn > 0 ? time(NULL) + respawn : 0;
+            m_respawnDelayTime = respawn > 0 ? respawn : 0;
+        }
         void Respawn();
         bool isSpawned() const
         {
@@ -761,7 +782,7 @@ class GameObject : public WorldObject, public GridObject<GameObject>, public Mov
         bool HasLootRecipient() const { return m_lootRecipient || m_lootRecipientGroup; }
         uint32 m_groupLootTimer;                            // (msecs)timer used for group loot
         uint32 lootingGroupLowGUID;                         // used to find group which is looting
-        void SetLootGenerationTime();
+        void SetLootGenerationTime() { m_lootGenerationTime = time(NULL); }
         uint32 GetLootGenerationTime() const { return m_lootGenerationTime; }
 
         bool hasQuest(uint32 quest_id) const;

@@ -17,8 +17,16 @@ EndScriptData */
 #include "ObjectAccessor.h"
 #include "ObjectMgr.h"
 #include "Player.h"
-#include "GameTime.h"
 #include "ScriptMgr.h"
+#include "BanManager.h"
+
+/// Ban function modes
+enum BanMode
+{
+    BAN_ACCOUNT,
+    BAN_CHARACTER,
+    BAN_IP
+};
 
 class ban_commandscript : public CommandScript
 {
@@ -34,18 +42,21 @@ public:
             { "playeraccount",  SEC_GAMEMASTER,  true,  &HandleUnBanAccountByCharCommand,    "" },
             { "ip",             SEC_GAMEMASTER,  true,  &HandleUnBanIPCommand,               "" }
         };
+
         static std::vector<ChatCommand> banlistCommandTable =
         {
             { "account",        SEC_GAMEMASTER,  true,  &HandleBanListAccountCommand,        "" },
             { "character",      SEC_GAMEMASTER,  true,  &HandleBanListCharacterCommand,      "" },
             { "ip",             SEC_GAMEMASTER,  true,  &HandleBanListIPCommand,             "" }
         };
+
         static std::vector<ChatCommand> baninfoCommandTable =
         {
             { "account",        SEC_GAMEMASTER,  true,  &HandleBanInfoAccountCommand,        "" },
             { "character",      SEC_GAMEMASTER,  true,  &HandleBanInfoCharacterCommand,      "" },
             { "ip",             SEC_GAMEMASTER,  true,  &HandleBanInfoIPCommand,             "" }
         };
+
         static std::vector<ChatCommand> banCommandTable =
         {
             { "account",        SEC_GAMEMASTER,  true,  &HandleBanAccountCommand,            "" },
@@ -53,6 +64,7 @@ public:
             { "playeraccount",  SEC_GAMEMASTER,  true,  &HandleBanAccountByCharCommand,      "" },
             { "ip",             SEC_GAMEMASTER,  true,  &HandleBanIPCommand,                 "" }
         };
+
         static std::vector<ChatCommand> commandTable =
         {
             { "ban",            SEC_GAMEMASTER,  true,  nullptr,                             "", banCommandTable },
@@ -60,6 +72,7 @@ public:
             { "banlist",        SEC_GAMEMASTER,  true,  nullptr,                             "", banlistCommandTable },
             { "unban",          SEC_GAMEMASTER,  true,  nullptr,                             "", unbanCommandTable }
         };
+
         return commandTable;
     }
 
@@ -94,24 +107,28 @@ public:
             return false;
         }
 
-        switch (sWorld->BanCharacter(name, durationStr, reasonStr, handler->GetSession() ? handler->GetSession()->GetPlayerName() : ""))
+        switch (sBan->BanCharacter(name, durationStr, reasonStr, handler->GetSession() ? handler->GetSession()->GetPlayerName() : ""))
         {
-            case BAN_SUCCESS:
+        case BAN_SUCCESS:
+            if (atoi(durationStr) > 0)
             {
-                if (atoi(durationStr) > 0)
+                if (!sWorld->getBoolConfig(CONFIG_SHOW_BAN_IN_WORLD))
                     handler->PSendSysMessage(LANG_BAN_YOUBANNED, name.c_str(), secsToTimeString(TimeStringToSecs(durationStr), true).c_str(), reasonStr);
-                else
-                    handler->PSendSysMessage(LANG_BAN_YOUPERMBANNED, name.c_str(), reasonStr);
-                break;
             }
-            case BAN_NOTFOUND:
+            else
             {
-                handler->PSendSysMessage(LANG_BAN_NOTFOUND, "character", name.c_str());
-                handler->SetSentErrorMessage(true);
-                return false;
+                if (!sWorld->getBoolConfig(CONFIG_SHOW_BAN_IN_WORLD))
+                    handler->PSendSysMessage(LANG_BAN_YOUPERMBANNED, name.c_str(), reasonStr);
             }
-            default:
-                break;
+            break;
+        case BAN_NOTFOUND:
+        {
+            handler->PSendSysMessage(LANG_BAN_NOTFOUND, "character", name.c_str());
+            handler->SetSentErrorMessage(true);
+            return false;
+        }
+        default:
+            break;
         }
 
         return true;
@@ -170,13 +187,34 @@ public:
                 break;
         }
 
-        switch (sWorld->BanAccount(mode, nameOrIP, durationStr, reasonStr, handler->GetSession() ? handler->GetSession()->GetPlayerName() : ""))
+        BanReturn banReturn;
+
+        switch (mode)
+        {
+        case BAN_ACCOUNT:
+            banReturn = sBan->BanAccount(nameOrIP, durationStr, reasonStr, handler->GetSession() ? handler->GetSession()->GetPlayerName() : "");
+            break;
+        case BAN_CHARACTER:
+            banReturn = sBan->BanAccountByPlayerName(nameOrIP, durationStr, reasonStr, handler->GetSession() ? handler->GetSession()->GetPlayerName() : "");
+            break;
+        case BAN_IP:
+            banReturn = sBan->BanIP(nameOrIP, durationStr, reasonStr, handler->GetSession() ? handler->GetSession()->GetPlayerName() : "");
+            break;
+        }
+
+        switch (banReturn)
         {
             case BAN_SUCCESS:
                 if (atoi(durationStr) > 0)
-                    handler->PSendSysMessage(LANG_BAN_YOUBANNED, nameOrIP.c_str(), secsToTimeString(TimeStringToSecs(durationStr), true).c_str(), reasonStr);
+                {
+                    if (!sWorld->getBoolConfig(CONFIG_SHOW_BAN_IN_WORLD)) 
+                        handler->PSendSysMessage(LANG_BAN_YOUBANNED, nameOrIP.c_str(), secsToTimeString(TimeStringToSecs(durationStr), true).c_str(), reasonStr);
+                }
                 else
-                    handler->PSendSysMessage(LANG_BAN_YOUPERMBANNED, nameOrIP.c_str(), reasonStr);
+                {
+                    if (!sWorld->getBoolConfig(CONFIG_SHOW_BAN_IN_WORLD))
+                        handler->PSendSysMessage(LANG_BAN_YOUPERMBANNED, nameOrIP.c_str(), reasonStr);
+                }
                 break;
             case BAN_SYNTAX_ERROR:
                 return false;
@@ -197,6 +235,8 @@ public:
                 return false;
             case BAN_LONGER_EXISTS:
                 handler->PSendSysMessage("Unsuccessful! A longer ban is already present on this account!");
+                break;
+            default:
                 break;
         }
 
@@ -246,7 +286,7 @@ public:
 
             time_t unbanDate = time_t(fields[3].GetUInt32());
             bool active = false;
-            if (fields[2].GetBool() && (fields[1].GetUInt64() == uint64(0) || unbanDate >= GameTime::GetGameTime()))
+            if (fields[2].GetBool() && (fields[1].GetUInt64() == uint64(0) || unbanDate >= time(nullptr)))
                 active = true;
             bool permanent = (fields[1].GetUInt64() == uint64(0));
             std::string banTime = permanent ? handler->GetTrinityString(LANG_BANINFO_INFINITE) : secsToTimeString(fields[1].GetUInt64(), true);
@@ -294,7 +334,7 @@ public:
             Field* fields = result->Fetch();
             time_t unbanDate = time_t(fields[3].GetUInt32());
             bool active = false;
-            if (fields[2].GetUInt8() && (!fields[1].GetUInt32() || unbanDate >= GameTime::GetGameTime()))
+            if (fields[2].GetUInt8() && (!fields[1].GetUInt32() || unbanDate >= time(nullptr)))
                 active = true;
             bool permanent = (fields[1].GetUInt32() == uint32(0));
             std::string banTime = permanent ? handler->GetTrinityString(LANG_BANINFO_INFINITE) : secsToTimeString(fields[1].GetUInt64(), true);
@@ -630,16 +670,16 @@ public:
         if (!nameStr)
             return false;
 
-        std::string name = nameStr;
+        std::string CharacterName = nameStr;
 
-        if (!normalizePlayerName(name))
+        if (!normalizePlayerName(CharacterName))
         {
             handler->SendSysMessage(LANG_PLAYER_NOT_FOUND);
             handler->SetSentErrorMessage(true);
             return false;
         }
 
-        if (!sWorld->RemoveBanCharacter(name))
+        if (!sBan->RemoveBanCharacter(CharacterName))
         {
             handler->SendSysMessage(LANG_PLAYER_NOT_FOUND);
             handler->SetSentErrorMessage(true);
@@ -694,10 +734,29 @@ public:
                 break;
         }
 
-        if (sWorld->RemoveBanAccount(mode, nameOrIP))
-            handler->PSendSysMessage(LANG_UNBAN_UNBANNED, nameOrIP.c_str());
-        else
-            handler->PSendSysMessage(LANG_UNBAN_ERROR, nameOrIP.c_str());
+        switch (mode)
+        {
+        case BAN_ACCOUNT:
+            if (sBan->RemoveBanAccount(nameOrIP))
+                handler->PSendSysMessage(LANG_UNBAN_UNBANNED, nameOrIP.c_str());
+            else
+                handler->PSendSysMessage(LANG_UNBAN_ERROR, nameOrIP.c_str());
+            break;
+        case BAN_CHARACTER:
+            if (sBan->RemoveBanAccountByPlayerName(nameOrIP))
+                handler->PSendSysMessage(LANG_UNBAN_UNBANNED, nameOrIP.c_str());
+            else
+                handler->PSendSysMessage(LANG_UNBAN_ERROR, nameOrIP.c_str());
+            break;
+        case BAN_IP:
+            if (sBan->RemoveBanIP(nameOrIP))
+                handler->PSendSysMessage(LANG_UNBAN_UNBANNED, nameOrIP.c_str());
+            else
+                handler->PSendSysMessage(LANG_UNBAN_ERROR, nameOrIP.c_str());
+            break;
+        default:
+            break;
+        }
 
         return true;
     }

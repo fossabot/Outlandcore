@@ -136,6 +136,7 @@ enum WorldBoolConfigs
     CONFIG_PVP_TOKEN_ENABLE,
     CONFIG_NO_RESET_TALENT_COST,
     CONFIG_SHOW_KICK_IN_WORLD,
+    CONFIG_SHOW_BAN_IN_WORLD,
     CONFIG_CHATLOG_CHANNEL,
     CONFIG_CHATLOG_WHISPER,
     CONFIG_CHATLOG_SYSCHAN,
@@ -162,9 +163,12 @@ enum WorldBoolConfigs
     CONFIG_ENABLE_CONTINENT_TRANSPORT,
     CONFIG_ENABLE_CONTINENT_TRANSPORT_PRELOADING,
     CONFIG_MINIGOB_MANABONK,
+    CONFIG_IP_BASED_ACTION_LOGGING,
     CONFIG_CALCULATE_CREATURE_ZONE_AREA_DATA,
     CONFIG_CALCULATE_GAMEOBJECT_ZONE_AREA_DATA,
     CONFIG_CHECK_GOBJECT_LOS,
+    CONFIG_CLOSE_IDLE_CONNECTIONS,
+    CONFIG_LFG_LOCATION_ALL, // Player can join LFG anywhere
     BOOL_CONFIG_VALUE_COUNT
 };
 
@@ -291,6 +295,8 @@ enum WorldIntConfigs
     CONFIG_PVP_TOKEN_MAP_TYPE,
     CONFIG_PVP_TOKEN_ID,
     CONFIG_PVP_TOKEN_COUNT,
+    CONFIG_INTERVAL_LOG_UPDATE,
+    CONFIG_MIN_LOG_UPDATE,
     CONFIG_ENABLE_SINFO_LOGIN,
     CONFIG_PLAYER_ALLOW_COMMANDS,
     CONFIG_NUMTHREADS,
@@ -617,6 +623,18 @@ class World
         /// Get the path where data (dbc, maps) are stored on disk
         std::string const& GetDataPath() const { return m_dataPath; }
 
+        /// When server started?
+        time_t const& GetStartTime() const { return m_startTime; }
+        /// What time is it?
+        time_t const& GetGameTime() const { return m_gameTime; }
+        /// What time is it? in ms
+        static uint32 GetGameTimeMS() { return m_gameMSTime; }
+        /// Uptime (in secs)
+        uint32 GetUptime() const { return uint32(m_gameTime - m_startTime); }
+        /// Update time
+        uint32 GetUpdateTime() const { return m_updateTime; }
+        void SetRecordDiffInterval(int32 t) { if (t >= 0) m_int_configs[CONFIG_INTERVAL_LOG_UPDATE] = (uint32)t; }
+
         /// Next daily quests and random bg reset time
         time_t GetNextDailyQuestsResetTime() const { return m_NextDailyQuestReset; }
         time_t GetNextWeeklyQuestsResetTime() const { return m_NextWeeklyQuestReset; }
@@ -709,10 +727,6 @@ class World
 
         void KickAll();
         void KickAllLess(AccountTypes sec);
-        BanReturn BanAccount(BanMode mode, std::string const& nameOrIP, std::string const& duration, std::string const& reason, std::string const& author);
-        bool RemoveBanAccount(BanMode mode, std::string const& nameOrIP);
-        BanReturn BanCharacter(std::string const& name, std::string const& duration, std::string const& reason, std::string const& author);
-        bool RemoveBanCharacter(std::string const& name);
 
         // for max speed access
         static float GetMaxVisibleDistanceOnContinents()    { return m_MaxVisibleDistanceOnContinents; }
@@ -797,8 +811,12 @@ class World
 
         bool m_isClosed;
 
+        time_t m_startTime;
+        time_t m_gameTime;
         IntervalTimer m_timers[WUPDATE_COUNT];
         time_t mail_expire_check_timer;
+        uint32 m_updateTime, m_updateTimeSum;
+        static uint32 m_gameMSTime;
 
         SessionMap m_sessions;
         SessionMap m_offlineSessions;

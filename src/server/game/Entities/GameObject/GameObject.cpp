@@ -6,7 +6,6 @@
 
 #include <G3D/Quat.h>
 #include "GameObjectAI.h"
-#include "GameTime.h"
 #include "BattlegroundAV.h"
 #include "CellImpl.h"
 #include "CreatureAISelector.h"
@@ -288,8 +287,11 @@ bool GameObject::Create(uint32 guidlow, uint32 name_id, Map* map, uint32 phaseMa
 
     SetObjectScale(goinfo->size);
 
-    SetUInt32Value(GAMEOBJECT_FACTION, goinfo->faction);
-    SetUInt32Value(GAMEOBJECT_FLAGS, goinfo->flags);
+    if (GameObjectTemplateAddon const* addon = GetTemplateAddon())
+    {
+        SetUInt32Value(GAMEOBJECT_FACTION, addon->faction);
+        SetUInt32Value(GAMEOBJECT_FLAGS, addon->flags);
+    }
 
     SetEntry(goinfo->entry);
 
@@ -374,9 +376,9 @@ void GameObject::Update(uint32 diff)
                     GameObjectTemplate const* goInfo = GetGOInfo();
                     // Bombs
                     if (goInfo->trap.type == 2)
-                        m_cooldownTime = GameTime::GetGameTimeMS()+10*IN_MILLISECONDS;   // Hardcoded tooltip value
+                        m_cooldownTime = World::GetGameTimeMS()+10*IN_MILLISECONDS;   // Hardcoded tooltip value
                     else if (GetOwner())
-                        m_cooldownTime = GameTime::GetGameTimeMS()+goInfo->trap.startDelay*IN_MILLISECONDS;
+                        m_cooldownTime = World::GetGameTimeMS()+goInfo->trap.startDelay*IN_MILLISECONDS;
 
                     m_lootState = GO_READY;
                     break;
@@ -384,7 +386,7 @@ void GameObject::Update(uint32 diff)
                 case GAMEOBJECT_TYPE_FISHINGNODE:
                 {
                     // fishing code (bobber ready)
-                    if (GameTime::GetGameTime() > m_respawnTime - FISHING_BOBBER_READY_TIME)
+                    if (time(NULL) > m_respawnTime - FISHING_BOBBER_READY_TIME)
                     {
                         // splash bobber (bobber ready now)
                         Unit* caster = GetOwner();
@@ -408,7 +410,7 @@ void GameObject::Update(uint32 diff)
                 }
                 case GAMEOBJECT_TYPE_SUMMONING_RITUAL:
                 {
-                    if (GameTime::GetGameTimeMS() < m_cooldownTime)
+                    if (World::GetGameTimeMS() < m_cooldownTime)
                         return;
                     GameObjectTemplate const* info = GetGOInfo();
                     if (info->summoningRitual.animSpell)
@@ -482,7 +484,7 @@ void GameObject::Update(uint32 diff)
         {
             if (m_respawnTime > 0)                          // timer on
             {
-                time_t now = GameTime::GetGameTime();
+                time_t now = time(NULL);
                 if (m_respawnTime <= now)            // timer expired
                 {
                     uint64 dbtableHighGuid = MAKE_NEW_GUID(m_DBTableGuid, GetEntry(), HIGHGUID_GAMEOBJECT);
@@ -558,7 +560,7 @@ void GameObject::Update(uint32 diff)
                 GameObjectTemplate const* goInfo = GetGOInfo();
                 if (goInfo->type == GAMEOBJECT_TYPE_TRAP)
                 {
-                    if (GameTime::GetGameTimeMS() < m_cooldownTime)
+                    if (World::GetGameTimeMS() < m_cooldownTime)
                         break;
 
                     // Type 2 - Bomb (will go away after casting it's spell)
@@ -618,7 +620,7 @@ void GameObject::Update(uint32 diff)
                         if (goInfo->trap.spellId)
                             CastSpell(target, goInfo->trap.spellId);
 
-                        m_cooldownTime = GameTime::GetGameTimeMS()+(goInfo->trap.cooldown ? goInfo->trap.cooldown :  uint32(4))*IN_MILLISECONDS;   // template or 4 seconds
+                        m_cooldownTime = World::GetGameTimeMS()+(goInfo->trap.cooldown ? goInfo->trap.cooldown :  uint32(4))*IN_MILLISECONDS;   // template or 4 seconds
 
                         if (goInfo->trap.type == 1)
                             SetLootState(GO_JUST_DEACTIVATED);
@@ -650,11 +652,11 @@ void GameObject::Update(uint32 diff)
             {
                 case GAMEOBJECT_TYPE_DOOR:
                 case GAMEOBJECT_TYPE_BUTTON:
-                    if (GetGOInfo()->GetAutoCloseTime() && GameTime::GetGameTimeMS() >= m_cooldownTime)
+                    if (GetGOInfo()->GetAutoCloseTime() && World::GetGameTimeMS() >= m_cooldownTime)
                         ResetDoorOrButton();
                     break;
                 case GAMEOBJECT_TYPE_GOOBER:
-                    if (GameTime::GetGameTimeMS() >= m_cooldownTime)
+                    if (World::GetGameTimeMS() >= m_cooldownTime)
                     {
                         RemoveFlag(GAMEOBJECT_FLAGS, GO_FLAG_IN_USE);
 
@@ -689,8 +691,9 @@ void GameObject::Update(uint32 diff)
                 //any return here in case battleground traps
                 // Xinef: Do not return here for summoned gos that should be deleted few lines below
                 // Xinef: Battleground objects are treated as spawned by default
-                if ((GetGOInfo()->flags & GO_FLAG_NODESPAWN) && isSpawnedByDefault())
-                    return;
+                if (GameObjectTemplateAddon const* addon = GetTemplateAddon())
+                    if ((addon->flags & GO_FLAG_NODESPAWN) && isSpawnedByDefault())
+                        return;
             }
 
             loot.clear();
@@ -711,7 +714,8 @@ void GameObject::Update(uint32 diff)
             {
                 SendObjectDeSpawnAnim(GetGUID());
                 //reset flags
-                SetUInt32Value(GAMEOBJECT_FLAGS, GetGOInfo()->flags);
+                if (GameObjectTemplateAddon const* addon = GetTemplateAddon())
+                    SetUInt32Value(GAMEOBJECT_FLAGS, addon->flags);
             }
 
             if (!m_respawnDelayTime)
@@ -724,7 +728,7 @@ void GameObject::Update(uint32 diff)
                 return;
             }
 
-            m_respawnTime = GameTime::GetGameTime() + m_respawnDelayTime;
+            m_respawnTime = time(NULL) + m_respawnDelayTime;
 
             // if option not set then object will be saved at grid unload
             if (GetMap()->IsDungeon())
@@ -735,6 +739,11 @@ void GameObject::Update(uint32 diff)
         }
     }
     sScriptMgr->OnGameObjectUpdate(this, diff);
+}
+
+GameObjectTemplateAddon const* GameObject::GetTemplateAddon() const
+{
+    return sObjectMgr->GetGameObjectTemplateAddon(GetGOInfo()->entry);
 }
 
 void GameObject::Refresh()
@@ -761,7 +770,9 @@ void GameObject::Delete()
     SendObjectDeSpawnAnim(GetGUID());
 
     SetGoState(GO_STATE_READY);
-    SetUInt32Value(GAMEOBJECT_FLAGS, GetGOInfo()->flags);
+
+    if (GameObjectTemplateAddon const* addon = GetTemplateAddon())
+        SetUInt32Value(GAMEOBJECT_FLAGS, addon->flags);
 
     // Xinef: if ritual gameobject is removed, clear anim spells
     if (GetGOInfo()->type == GAMEOBJECT_TYPE_SUMMONING_RITUAL)
@@ -930,7 +941,7 @@ bool GameObject::LoadGameObjectFromDB(uint32 guid, Map* map, bool addToMap)
             m_respawnTime = GetMap()->GetGORespawnTime(m_DBTableGuid);
 
             // ready to respawn
-            if (m_respawnTime && m_respawnTime <= GameTime::GetGameTime())
+            if (m_respawnTime && m_respawnTime <= time(NULL))
             {
                 m_respawnTime = 0;
                 GetMap()->RemoveGORespawnTime(m_DBTableGuid);
@@ -1014,7 +1025,7 @@ Unit* GameObject::GetOwner() const
 
 void GameObject::SaveRespawnTime()
 { 
-    if (m_goData && m_goData->dbData && m_respawnTime > GameTime::GetGameTime() && m_spawnedByDefault)
+    if (m_goData && m_goData->dbData && m_respawnTime > time(NULL) && m_spawnedByDefault)
         GetMap()->SaveGORespawnTime(m_DBTableGuid, m_respawnTime);
 }
 
@@ -1069,26 +1080,11 @@ bool GameObject::IsInvisibleDueToDespawn() const
     return false;
 }
 
-time_t GameObject::GetRespawnTimeEx() const
-{
-    time_t now = GameTime::GetGameTime();
-    if (m_respawnTime > now)
-        return m_respawnTime;
-    else
-        return now;
-}
-
-void GameObject::SetRespawnTime(int32 respawn)
-{
-    m_respawnTime = respawn > 0 ? GameTime::GetGameTime() + respawn : 0;
-    m_respawnDelayTime = respawn > 0 ? respawn : 0;
-}
-
 void GameObject::Respawn()
 { 
     if (m_spawnedByDefault && m_respawnTime > 0)
     {
-        m_respawnTime = GameTime::GetGameTime();
+        m_respawnTime = time(NULL);
         GetMap()->RemoveGORespawnTime(m_DBTableGuid);
     }
 }
@@ -1216,7 +1212,7 @@ void GameObject::UseDoorOrButton(uint32 time_to_restore, bool alternative /* = f
     SwitchDoorOrButton(true, alternative);
     SetLootState(GO_ACTIVATED, user);
 
-    m_cooldownTime = GameTime::GetGameTimeMS()+time_to_restore;
+    m_cooldownTime = World::GetGameTimeMS()+time_to_restore;
 }
 
 void GameObject::SetGoArtKit(uint8 kit)
@@ -1283,10 +1279,10 @@ void GameObject::Use(Unit* user)
     // If cooldown data present in template
     if (uint32 cooldown = GetGOInfo()->GetCooldown())
     {
-        if (GameTime::GetGameTimeMS() < m_cooldownTime)
+        if (World::GetGameTimeMS() < m_cooldownTime)
             return;
 
-        m_cooldownTime = GameTime::GetGameTimeMS()+cooldown*IN_MILLISECONDS;
+        m_cooldownTime = World::GetGameTimeMS()+cooldown*IN_MILLISECONDS;
     }
 
     switch (GetGoType())
@@ -1320,7 +1316,7 @@ void GameObject::Use(Unit* user)
             if (goInfo->trap.spellId)
                 CastSpell(user, goInfo->trap.spellId);
 
-            m_cooldownTime = GameTime::GetGameTimeMS()+(goInfo->trap.cooldown ? goInfo->trap.cooldown :  uint32(4))*IN_MILLISECONDS;   // template or 4 seconds
+            m_cooldownTime = World::GetGameTimeMS()+(goInfo->trap.cooldown ? goInfo->trap.cooldown :  uint32(4))*IN_MILLISECONDS;   // template or 4 seconds
 
             if (goInfo->trap.type == 1)         // Deactivate after trigger
                 SetLootState(GO_JUST_DEACTIVATED);
@@ -1473,7 +1469,7 @@ void GameObject::Use(Unit* user)
             if (info->goober.customAnim)
                 SendCustomAnim(GetGoAnimProgress());
                 
-            m_cooldownTime = GameTime::GetGameTimeMS()+info->GetAutoCloseTime();
+            m_cooldownTime = World::GetGameTimeMS()+info->GetAutoCloseTime();
 
             // cast this spell later if provided
             spellId = info->goober.spellId;
@@ -1647,7 +1643,7 @@ void GameObject::Use(Unit* user)
                 if (!info->summoningRitual.animSpell)
                     m_cooldownTime = 0;
                 else // channel ready, maintain this
-                    m_cooldownTime = GameTime::GetGameTimeMS()+5*IN_MILLISECONDS;
+                    m_cooldownTime = World::GetGameTimeMS()+5*IN_MILLISECONDS;
             }
 
             return;
@@ -1894,7 +1890,7 @@ void GameObject::CastSpell(Unit* target, uint32 spellId)
     else
     {
         // xinef: set faction of gameobject, if no faction - assume hostile
-        trigger->setFaction(GetGOInfo()->faction ? GetGOInfo()->faction : 14);
+        trigger->setFaction(GetTemplateAddon() && GetTemplateAddon()->faction ? GetTemplateAddon()->faction : 14);
         // Set owner guid for target if no owner availble - needed by trigger auras
         // - trigger gets despawned and there's no caster avalible (see AuraEffect::TriggerSpell())
         // xinef: set proper orientation, fixes cast against stealthed targets
@@ -2198,11 +2194,6 @@ void GameObject::SetLootState(LootState state, Unit* unit)
         else if (state == GO_READY)
             EnableCollision(!startOpen);
     }*/
-}
-
-void GameObject::SetLootGenerationTime()
-{
-    m_lootGenerationTime = GameTime::GetGameTime();
 }
 
 void GameObject::SetGoState(GOState state)
